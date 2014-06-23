@@ -53,6 +53,7 @@
      <Compile Include="Assets\scripts\LoadFile.js" />
      <Compile Include="Assets\scripts\PlayerMove.js" />
      <Compile Include="Assets\scripts\QubyMover.js" />
+     <Compile Include="Assets\scripts\TriangleEditor\BuildIcosaedron.js" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp-firstpass.csproj">

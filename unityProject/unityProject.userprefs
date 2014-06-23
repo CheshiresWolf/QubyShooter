@@ -1,10 +1,11 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\scripts\GenerateQube.js">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\scripts\LoadFile.js">
     <Files>
-      <File FileName="Assets\scripts\LoadFile.js" Line="120" Column="3" />
-      <File FileName="Assets\scripts\GenerateQube.js" Line="112" Column="39" />
-      <File FileName="Assets\scripts\CameraMove.js" Line="49" Column="65" />
+      <File FileName="Assets\scripts\TriangleEditor\BuildIcosaedron.js" Line="134" Column="35" />
+      <File FileName="Assets\scripts\LoadFile.js" Line="58" Column="39" />
+      <File FileName="Assets\scripts\GenerateQube.js" Line="126" Column="3" />
+      <File FileName="Assets\scripts\CameraMove.js" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
