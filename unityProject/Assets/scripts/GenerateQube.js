@@ -7,7 +7,7 @@ function Start () {
 function Update () {
 
 }
-
+/*
 public class Quby {
 	public var body : GameObject;
 	public var flag : boolean;
@@ -123,3 +123,4 @@ public class Level {
 		return arrayIterator;
 	}
 }
+*/
