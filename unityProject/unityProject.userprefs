@@ -1,0 +1,14 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\scripts\GenerateQube.js">
+    <Files>
+      <File FileName="Assets\scripts\LoadFile.js" Line="120" Column="3" />
+      <File FileName="Assets\scripts\GenerateQube.js" Line="112" Column="39" />
+      <File FileName="Assets\scripts\CameraMove.js" Line="49" Column="65" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
