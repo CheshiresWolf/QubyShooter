@@ -2,8 +2,12 @@
 
 var index : int;
 var points : Vector3[];
+var faces : TriangleIndices[];
+
+var parent : GameObject;
 
 function Start () {
+	parent = GameObject.Find("Isocaedron");
 	index = 0;
 	
 	var t = (1.0 + Mathf.Sqrt(5.0)) / 2.0;
@@ -23,18 +27,48 @@ function Start () {
 	points[10] = addSphere(-t,  0, -1);
 	points[11] = addSphere(-t,  0,  1);
 	
-	getMiddlePoint(0, 1);
+	createFaces();
+	
+	for (var i : int = 0; i < 20; i++) {
+		//setColor(addVertex(getFaceCenter(i)), Color.red);
+		addSphere(getFaceCenter(i));
+	}
 }
 
 function Update () {
 
 }
 
-function addVertex(pos : Vector3) {
+function getFaceCenter(faceIndex : int) : Vector3 {
+	var face : TriangleIndices = faces[faceIndex];
+	
+	var mp1 : Vector3 = getMiddlePoint(face.v1, face.v2);
+	//var mp2 : Vector3 = getMiddlePoint(face.v2, face.v3);
+	
+	return new Vector3(
+		mp1.x + (points[face.v3].x - mp1.x) / 3,
+		mp1.y + (points[face.v3].y - mp1.y) / 3,
+		mp1.z + (points[face.v3].z - mp1.z) / 3
+	);
+}
+
+function setColor(body : GameObject, color : Color) {
+	var gameObjectRenderer : MeshRenderer = body.GetComponent("MeshRenderer");
+	gameObjectRenderer.material.color = color;
+}
+
+function addVertex(pos : Vector3) : GameObject {
 	var body = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 			
 	body.transform.localScale = Vector3(0.2, 0.2, 0.2);
 	body.transform.position = pos;
+	body.transform.parent = parent.transform;
+	
+	return body;
+}
+
+function addSphere(vectorIn : Vector3) : Vector3 {
+	return addSphere(vectorIn.x, vectorIn.y, vectorIn.z);
 }
 
 function addSphere(x : float, y : float, z : float) : Vector3 {
@@ -48,7 +82,7 @@ function addSphere(x : float, y : float, z : float) : Vector3 {
 }
 
 function createFaces() {
-	var faces : TriangleIndices[] = new TriangleIndices[20];
+	faces = new TriangleIndices[20];
 
 	// 5 faces around point 0
 	faces[0] = new TriangleIndices(0, 11, 5 );
@@ -82,13 +116,12 @@ function createFaces() {
 function getMiddlePoint(p1 : int, p2 : int) : Vector3 {
 	var point1 : Vector3 = points[p1];
 	var point2 : Vector3 = points[p2];
-	
-	var mx : float = (point1.x + point2.x) / 2.0;
-	var my : float = (point1.y + point2.y) / 2.0; 
-	var mz : float = (point1.z + point2.z) / 2.0;
-
-	//makes sure point is on unit sphere
-	return addSphere(mx, my, mz);
+		
+	return new Vector3(
+		(point1.x + point2.x) / 2.0,
+		(point1.y + point2.y) / 2.0,
+		(point1.z + point2.z) / 2.0
+	);
 }
 
 public class TriangleIndices {
