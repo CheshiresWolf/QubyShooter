@@ -7,35 +7,25 @@ var parent : GameObject;
 
 function Start () {
 	parent = GameObject.Find("Isocaedron");
-	radius = 4.0;
+	radius = 2.0;
 	
-	createFaces();
+	initFaces();
 	
-	subdivide();
-	subdivide();
-	subdivide();
-	subdivide();
+	//subdivide();
+	//subdivide();
+	//subdivide();
+	//subdivide();
 		
 	drawFaces();
 	
-	//placeTriangles();
+	placeTriangles();
 }
 
 function Update () {
 
 }
 
-function getFaceCenter(faceIndex : int) : Vector3 {
-	var face : TriangleIndices = faces[faceIndex];
-	
-	var mp : Vector3 = getMiddlePoint(face.v1, face.v2);
-	
-	return new Vector3(
-		mp.x + (face.v3.x - mp.x) / 3,
-		mp.y + (face.v3.y - mp.y) / 3,
-		mp.z + (face.v3.z - mp.z) / 3
-	);
-}
+//==============================<Calc>==============================
 
 function placeOnSphere(vectorIn : Vector3) : Vector3 {
 	return placeOnSphere(vectorIn.x, vectorIn.y, vectorIn.z);
@@ -48,7 +38,106 @@ function placeOnSphere(x : float, y : float, z : float) : Vector3 {
 	return pos;
 }
 
-function createFaces() {
+function placeTriangles() {
+	var trianglePos;
+	
+	for (var i : int = 0; i < faces.length; i++) {
+		//trianglePos = getFaceCenter(i);
+		drawTriangle(faces[i]);//trianglePos);
+		//setColor(drawSphere(placeOnSphere(trianglePos)), Color.red);
+	}
+}
+
+function getFaceCenter(face : TriangleIndices, mp : Vector3) : Vector3 {
+	return new Vector3(
+		mp.x + (face.v3.x - mp.x) / 3,
+		mp.y + (face.v3.y - mp.y) / 3,
+		mp.z + (face.v3.z - mp.z) / 3
+	);
+}
+
+function getMiddlePoint(p1 : Vector3, p2 : Vector3) : Vector3 {		
+	return new Vector3(
+		(p1.x + p2.x) / 2.0,
+		(p1.y + p2.y) / 2.0,
+		(p1.z + p2.z) / 2.0
+	);
+}
+
+function radiansToDegrees(rad : float) : float {
+	return (rad * 180) / Mathf.PI;
+}
+
+//==============================<Draw>==============================
+
+function setColor(body : GameObject, color : Color) {
+	var gameObjectRenderer : MeshRenderer = body.GetComponent("MeshRenderer");
+	gameObjectRenderer.material.color = color;
+}
+
+function drawSphere(pos : Vector3) : GameObject {
+	var body = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+			
+	body.transform.localScale = Vector3(0.1, 0.1, 0.1);
+	body.transform.position = pos;
+	body.transform.parent = parent.transform;
+	
+	return body;
+}
+
+function drawTriangle(face : TriangleIndices) : GameObject {
+	//var tringleOpts : TriangleOptions = getTriangleOpts(face);
+	var mp : Vector3 = getMiddlePoint(face.v1, face.v2);
+
+	setColor(drawSphere(mp), Color.red);
+
+	var xRot : float = radiansToDegrees(
+		Mathf.Atan2(face.v1.z - mp.z, face.v1.y - mp.y)
+	);
+	if (xRot != 0) {
+		xRot += 90;
+	}
+
+	var yRot : float = radiansToDegrees(
+		Mathf.Atan2(face.v3.z - mp.z, face.v3.x - mp.x)
+	);
+
+	var zRot : float = radiansToDegrees(
+		Mathf.Atan2(face.v3.y - mp.y, face.v3.z - mp.z)
+	);
+	if (zRot != 0) {
+		zRot = (90 - zRot) * 2;
+	}
+
+	Debug.Log("BuildIcosaedron | drawTriangle | xRot = " + xRot + "; yRot = " + yRot);
+
+	var body = GameObject.Instantiate(
+		GameObject.Find("triangle"),
+		mp,
+		Quaternion.Euler(
+			xRot,
+			0,//yRot,
+			zRot
+		)
+	) as GameObject;
+	
+	body.transform.localScale = Vector3(0.5, 0.5, 0.5);
+	body.transform.parent = parent.transform;
+	
+	return body;
+}
+
+function drawFaces() {
+	for (var i : int = 0; i < faces.length; i++) {
+		drawSphere(faces[i].v1);
+		drawSphere(faces[i].v2);
+		drawSphere(faces[i].v3);
+	}
+}
+
+//==============================<init>==============================
+
+function initFaces() {
 	var t = (1.0 + Mathf.Sqrt(5.0)) / 2.0;
 
 	var points = new Vector3[12];
@@ -97,44 +186,6 @@ function createFaces() {
 	faces[19] = new TriangleIndices(9, 8, 1 , points);
 }
 
-function getMiddlePoint(p1 : Vector3, p2 : Vector3) : Vector3 {		
-	return new Vector3(
-		(p1.x + p2.x) / 2.0,
-		(p1.y + p2.y) / 2.0,
-		(p1.z + p2.z) / 2.0
-	);
-}
-
-function setColor(body : GameObject, color : Color) {
-	var gameObjectRenderer : MeshRenderer = body.GetComponent("MeshRenderer");
-	gameObjectRenderer.material.color = color;
-}
-
-function drawSphere(pos : Vector3) : GameObject {
-	var body = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-			
-	body.transform.localScale = Vector3(0.1, 0.1, 0.1);
-	body.transform.position = pos;
-	body.transform.parent = parent.transform;
-	
-	return body;
-}
-
-function drawFaces() {
-	for (var i : int = 0; i < faces.length; i++) {
-		drawSphere(faces[i].v1);
-		drawSphere(faces[i].v2);
-		drawSphere(faces[i].v3);
-	}
-}
-
-function placeTriangles() {
-
-	for (var i : int = 0; i < faces.length; i++) {
-		setColor(drawSphere(getFaceCenter(i)), Color.red);
-	}
-}
-
 function subdivide() {
     var faces2 = new TriangleIndices[faces.length * 4];
     
@@ -153,6 +204,8 @@ function subdivide() {
     faces = faces2;    
 }
 
+//==============================<Class>==============================
+
 public class TriangleIndices {
 	public var v1 : Vector3;
 	public var v2 : Vector3;
@@ -168,5 +221,15 @@ public class TriangleIndices {
 	    this.v1 = points[v1];
 	    this.v2 = points[v2];
 	    this.v3 = points[v3];
+	}
+}
+
+public class TriangleOptions {
+	public var pos : Vector3;
+	public var rot : Quaternion;
+
+	public function TriangleOptions(pos : Vector3, rot : Quaternion) {
+		this.pos = pos;
+		this.rot = rot;
 	}
 }
