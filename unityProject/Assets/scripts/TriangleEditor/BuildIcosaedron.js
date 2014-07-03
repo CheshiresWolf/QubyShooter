@@ -40,8 +40,9 @@ function placeOnSphere(x : float, y : float, z : float) : Vector3 {
 
 function placeTriangles() {
 	var trianglePos;
-	
-	for (var i : int = 0; i < faces.length; i++) {
+	setColor(drawTriangle(faces[0]), Color.green);
+
+	for (var i : int = 1; i < faces.length; i++) {
 		//trianglePos = getFaceCenter(i);
 		drawTriangle(faces[i]);//trianglePos);
 		//setColor(drawSphere(placeOnSphere(trianglePos)), Color.red);
@@ -88,36 +89,44 @@ function drawSphere(pos : Vector3) : GameObject {
 function drawTriangle(face : TriangleIndices) : GameObject {
 	//var tringleOpts : TriangleOptions = getTriangleOpts(face);
 	var mp : Vector3 = getMiddlePoint(face.v1, face.v2);
+	var cp : Vector3 = getFaceCenter(face, mp);
+	//var dist : float = Mathf.Sqrt( Mathf.Pow(face.v3.x - mp.x, 2) + Mathf.Pow(face.v3.y - mp.y, 2) + Mathf.Pow(face.v3.z - mp.z, 2) );
 
 	setColor(drawSphere(mp), Color.red);
 
+	var b1 : float = face.v1.y - mp.y;
+	var b2 : float = face.v1.z - mp.z;
+
 	var xRot : float = radiansToDegrees(
-		Mathf.Atan2(face.v1.z - mp.z, face.v1.y - mp.y)
+		//Mathf.Atan2(face.v1.y - mp.y, face.v1.z - mp.z)
+		Mathf.Atan2( Mathf.Abs(b1), Mathf.Abs(b2) )
 	);
-	if (xRot != 0) {
+	if (b1 < 0) {
 		xRot += 90;
 	}
+	if (b2 < 0) {
+		xRot += 180;
+	}
 
-	var yRot : float = radiansToDegrees(
+	var yRot : float = -radiansToDegrees(
 		Mathf.Atan2(face.v3.z - mp.z, face.v3.x - mp.x)
 	);
 
-	var zRot : float = radiansToDegrees(
-		Mathf.Atan2(face.v3.y - mp.y, face.v3.z - mp.z)
+	//var zr1 : float = face.v3.y - mp.y;
+	//var zr2 : float = face.v3.z - mp.z;
+	var zRot : float = -radiansToDegrees(
+		Mathf.Atan2(face.v3.y - mp.y, face.v3.x - mp.x)
 	);
-	if (zRot != 0) {
-		zRot = (90 - zRot) * 2;
-	}
 
-	Debug.Log("BuildIcosaedron | drawTriangle | xRot = " + xRot + "; yRot = " + yRot);
+	//Debug.Log("BuildIcosaedron | drawTriangle | xRot = " + xRot + "; yRot = " + yRot);
 
 	var body = GameObject.Instantiate(
 		GameObject.Find("triangle"),
-		mp,
+		cp,
 		Quaternion.Euler(
 			xRot,
 			0,//yRot,
-			zRot
+			0//zRot
 		)
 	) as GameObject;
 	
@@ -127,11 +136,29 @@ function drawTriangle(face : TriangleIndices) : GameObject {
 	return body;
 }
 
+var alreadyDraw = new Array();
+
+//LAST RETURN IS VERY BAD IDEA.
+//DELETE IT AFTER DEBUG
+function checkBeforeDrawSphere(vec : Vector3) {
+	for (var i : int = 0; i < alreadyDraw.length; i++) {
+		if ( alreadyDraw[i] == vec ) return;
+	}
+
+	alreadyDraw.Push(vec);
+	return drawSphere(vec);
+};
+
 function drawFaces() {
-	for (var i : int = 0; i < faces.length; i++) {
-		drawSphere(faces[i].v1);
-		drawSphere(faces[i].v2);
-		drawSphere(faces[i].v3);
+	
+	setColor(checkBeforeDrawSphere(faces[0].v1), Color.yellow);
+	setColor(checkBeforeDrawSphere(faces[0].v2), Color.yellow);
+	setColor(checkBeforeDrawSphere(faces[0].v3), Color.yellow);
+
+	for (var i : int = 1; i < faces.length; i++) {
+		checkBeforeDrawSphere(faces[i].v1);
+		checkBeforeDrawSphere(faces[i].v2);
+		checkBeforeDrawSphere(faces[i].v3);
 	}
 }
 
