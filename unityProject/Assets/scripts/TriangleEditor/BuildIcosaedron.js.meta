@@ -2,7 +2,9 @@ fileFormatVersion: 2
 guid: bd4930b644267e741b363c7691b31485
 MonoImporter:
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - masterCopy: {fileID: 179660, guid: d96fe100022034dadbd9e58018860db7, type: 2}
+  - parent: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

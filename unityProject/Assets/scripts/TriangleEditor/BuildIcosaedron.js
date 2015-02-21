@@ -2,6 +2,7 @@
 
 var faces : TriangleIndices[];
 var radius : float;
+var masterCopy : GameObject;
 
 var parent : GameObject;
 
@@ -11,7 +12,7 @@ function Start () {
 	
 	initFaces();
 	
-	//subdivide();
+	subdivide();
 	//subdivide();
 	//subdivide();
 	//subdivide();
@@ -19,6 +20,8 @@ function Start () {
 	drawFaces();
 	
 	placeTriangles();
+	
+	logTriangles();
 }
 
 function Update () {
@@ -40,7 +43,10 @@ function placeOnSphere(x : float, y : float, z : float) : Vector3 {
 
 function placeTriangles() {
 	var trianglePos;
-	setColor(drawTriangle(faces[0]), Color.green);
+	
+	var firstTriangle = drawTriangle(faces[0]);
+	if (!firstTriangle) print(firstTriangle);
+	setColor(firstTriangle, Color.green);
 
 	for (var i : int = 1; i < faces.length; i++) {
 		//trianglePos = getFaceCenter(i);
@@ -90,50 +96,24 @@ function drawTriangle(face : TriangleIndices) : GameObject {
 	//var tringleOpts : TriangleOptions = getTriangleOpts(face);
 	var mp : Vector3 = getMiddlePoint(face.v1, face.v2);
 	var cp : Vector3 = getFaceCenter(face, mp);
-	//var dist : float = Mathf.Sqrt( Mathf.Pow(face.v3.x - mp.x, 2) + Mathf.Pow(face.v3.y - mp.y, 2) + Mathf.Pow(face.v3.z - mp.z, 2) );
-
-	setColor(drawSphere(mp), Color.red);
-
-	var b1 : float = face.v1.y - mp.y;
-	var b2 : float = face.v1.z - mp.z;
-
-	var xRot : float = radiansToDegrees(
-		//Mathf.Atan2(face.v1.y - mp.y, face.v1.z - mp.z)
-		Mathf.Atan2( Mathf.Abs(b1), Mathf.Abs(b2) )
-	);
-	if (b1 < 0) {
-		xRot += 90;
-	}
-	if (b2 < 0) {
-		xRot += 180;
-	}
-
-	var yRot : float = -radiansToDegrees(
-		Mathf.Atan2(face.v3.z - mp.z, face.v3.x - mp.x)
-	);
-
-	//var zr1 : float = face.v3.y - mp.y;
-	//var zr2 : float = face.v3.z - mp.z;
-	var zRot : float = -radiansToDegrees(
-		Mathf.Atan2(face.v3.y - mp.y, face.v3.x - mp.x)
-	);
-
-	//Debug.Log("BuildIcosaedron | drawTriangle | xRot = " + xRot + "; yRot = " + yRot);
-
-	var body = GameObject.Instantiate(
-		GameObject.Find("triangle"),
+	
+	var initQuaternion = Quaternion.LookRotation( cp, face.v1 - cp );
+	
+	var body = Instantiate(
+		masterCopy,
 		cp,
-		Quaternion.Euler(
-			xRot,
-			0,//yRot,
-			0//zRot
-		)
+		initQuaternion
 	) as GameObject;
 	
-	body.transform.localScale = Vector3(0.5, 0.5, 0.5);
+	var edgeLength = Mathf.Sqrt(8) * Mathf.Cos(30 * Mathf.PI / 180);
+	var distanse = Vector3.Distance(face.v1, face.v2);
+	
+	var scale = distanse / edgeLength;
+	
+	body.transform.localScale = Vector3(scale, scale, scale);
 	body.transform.parent = parent.transform;
 	
-	return body;
+	return body.Find("perfectTriangle");
 }
 
 var alreadyDraw = new Array();
@@ -159,6 +139,14 @@ function drawFaces() {
 		checkBeforeDrawSphere(faces[i].v1);
 		checkBeforeDrawSphere(faces[i].v2);
 		checkBeforeDrawSphere(faces[i].v3);
+	}
+}
+
+function logTriangles() {
+	for (var i = 0; i < faces.length; i++) {
+		Debug.Log("BuildIcosaedron | logTriangles | face[" + i + "] v12 : " + Vector3.Distance(faces[i].v1, faces[i].v2));
+		Debug.Log("BuildIcosaedron | logTriangles | face[" + i + "] v23 : " + Vector3.Distance(faces[i].v2, faces[i].v3));
+		Debug.Log("BuildIcosaedron | logTriangles | face[" + i + "] v13 : " + Vector3.Distance(faces[i].v1, faces[i].v3));
 	}
 }
 
