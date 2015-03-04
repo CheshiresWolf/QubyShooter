@@ -3,12 +3,15 @@
 var faces : TriangleIndices[];
 var radius : float;
 var masterCopy : GameObject;
+var meshMasterCopy : Mesh;
+var matrixes : Matrix4x4[];
 
+var perspFactor : float;
 var parent : GameObject;
 
 function Start () {
 	parent = GameObject.Find("Isocaedron");
-	radius = 2.0;
+	radius = 10.0;
 	
 	initFaces();
 	
@@ -16,12 +19,14 @@ function Start () {
 	//subdivide();
 	//subdivide();
 	//subdivide();
+	
+	calcTransformMatrixes();
 		
 	drawFaces();
 	
 	placeTriangles();
 	
-	logTriangles();
+	log(matrixes);
 }
 
 function Update () {
@@ -44,14 +49,14 @@ function placeOnSphere(x : float, y : float, z : float) : Vector3 {
 function placeTriangles() {
 	var trianglePos;
 	
-	var firstTriangle = drawTriangle(faces[0]);
+	var firstTriangle = drawTriangle(faces[0], matrixes[0]);
 	if (!firstTriangle) print(firstTriangle);
 	setColor(firstTriangle, Color.green);
 
 	for (var i : int = 1; i < faces.length; i++) {
 		//trianglePos = getFaceCenter(i);
-		drawTriangle(faces[i]);//trianglePos);
-		//setColor(drawSphere(placeOnSphere(trianglePos)), Color.red);
+		var bufTriangle = drawTriangle(faces[i], matrixes[i]);//trianglePos);
+		setColor(bufTriangle, Color.blue);
 	}
 }
 
@@ -92,28 +97,41 @@ function drawSphere(pos : Vector3) : GameObject {
 	return body;
 }
 
-function drawTriangle(face : TriangleIndices) : GameObject {
-	//var tringleOpts : TriangleOptions = getTriangleOpts(face);
+function drawTriangle(face : TriangleIndices, matrix : Matrix4x4) : GameObject {
 	var mp : Vector3 = getMiddlePoint(face.v1, face.v2);
 	var cp : Vector3 = getFaceCenter(face, mp);
 	
 	var initQuaternion = Quaternion.LookRotation( cp, face.v1 - cp );
 	
 	var body = Instantiate(
-		masterCopy,
-		cp,
-		initQuaternion
+		masterCopy
 	) as GameObject;
 	
-	var edgeLength = Mathf.Sqrt(8) * Mathf.Cos(30 * Mathf.PI / 180);
-	var distanse = Vector3.Distance(face.v1, face.v2);
-	
-	var scale = distanse / edgeLength;
-	
-	body.transform.localScale = Vector3(scale, scale, scale);
 	body.transform.parent = parent.transform;
 	
-	return body.Find("perfectTriangle");
+	var child : GameObject = body;
+
+	var mesh : Mesh = new Mesh();
+
+	mesh.vertices  = meshMasterCopy.vertices;
+	mesh.triangles = meshMasterCopy.triangles;
+	mesh.uv        = meshMasterCopy.uv;
+	mesh.normals   = meshMasterCopy.normals;
+          
+	var vertices : Vector3[] = mesh.vertices;
+	var normals  : Vector3[] = mesh.normals;
+	
+	for (var i = 0; i < vertices.length; i++) {
+		vertices[i] = matrix.MultiplyPoint(vertices[i]);
+		normals[i]  = matrix.inverse.transpose.MultiplyPoint(normals[i]) * -1;
+	}
+	mesh.vertices = vertices;
+	mesh.normals  = normals;
+	child.GetComponent(MeshFilter).mesh = mesh;
+	
+	Debug.Log("BuildIcosaedron | drawTriangle | mesh size : " + child.GetComponent(MeshFilter).mesh.vertices.length);
+
+	return child;
 }
 
 var alreadyDraw = new Array();
@@ -142,12 +160,113 @@ function drawFaces() {
 	}
 }
 
-function logTriangles() {
-	for (var i = 0; i < faces.length; i++) {
-		Debug.Log("BuildIcosaedron | logTriangles | face[" + i + "] v12 : " + Vector3.Distance(faces[i].v1, faces[i].v2));
-		Debug.Log("BuildIcosaedron | logTriangles | face[" + i + "] v23 : " + Vector3.Distance(faces[i].v2, faces[i].v3));
-		Debug.Log("BuildIcosaedron | logTriangles | face[" + i + "] v13 : " + Vector3.Distance(faces[i].v1, faces[i].v3));
+function log(array : Matrix4x4[]) {
+	for (var i = 0; i < array.length; i++) {
+		Debug.Log("BuildIcosaedron | log | array[" + i + "] : " + array[i]);
 	}
+}
+
+function getMatrix(p1: Piramide, p2: Piramide) {
+
+    var result : Matrix4x4 = new Matrix4x4();
+
+    result.SetRow(
+        0, getRow(
+            p1.v1, p1.v2, p1.v3, p1.v4,
+            p2.v1.x, p2.v2.x, p2.v3.x, p2.v4.x
+        )
+    );
+
+    result.SetRow(
+        1, getRow(
+            p1.v1, p1.v2, p1.v3, p1.v4,
+            p2.v1.y, p2.v2.y, p2.v3.y, p2.v4.y
+        )
+    );
+
+    result.SetRow(
+        2, getRow(
+            p1.v1, p1.v2, p1.v3, p1.v4,
+            p2.v1.z, p2.v2.z, p2.v3.z, p2.v4.z
+        )
+    );
+
+    result.SetRow(
+        3, getRow(
+            p1.v1, p1.v2, p1.v3, p1.v4,
+            1, 1, 1, perspFactor
+        )
+    );
+
+    return result;
+}
+
+function getRow(v1 : Vector3, v2 : Vector3, v3 : Vector3, v4 : Vector3, c1 : float, c2 : float, c3 : float, c4 : float) {
+
+    var A = c1;
+    var B = v1.x;
+    var C = v1.y;
+    var D = v1.z;
+    var E = c2;
+    var F = v2.x;
+    var G = v2.y;
+    var H = v2.z;
+    var I = c3;
+    var J = v3.x;
+    var K = v3.y;
+    var L = v3.z;
+    var M = c4;
+    var N = v4.x;
+    var O = v4.y;
+    var P = v4.z;
+
+    var x = (
+        (
+            (L - P) * (A - M) + (P - D) * (I - M)
+        ) * (
+            (G - O) * (L - P) - (P - H) * (O - K)
+        ) + (
+            (L - P) * (O - C) + (P - D) * (O - K)
+        ) * (
+            (L - P) * (E - M) + (P - H) * (I - M)
+        )
+    ) / (
+        (
+            (B - N) * (L - P) - (P - D) * (N - J)
+        ) * (
+            (G - O) * (L - P) - (P - H) * (O - K)
+        ) - (
+            (L - P) * (O - C) + (P - D) * (O - K)
+        ) * (
+            (L - P) * (N - F) + (P - H) * (N - J)
+        )
+    );
+
+    var y = (
+        (L - P) * (E - M) + (P - H) * (I - M) +
+        x * ( (L - P) * (N - F) + (P - H) * (N - J) )
+    ) / (
+        (G - O) * (L - P) - (P - H) * (O - K)
+    );
+
+    var z = ( I - M + x * (N - J) + y * (O - K) ) / (L - P);
+
+    var w = M - N * x - O * y - P * z;
+
+    return Vector4(x, y, z, w);
+}
+
+function getV4(face : TriangleIndices) {
+	var res = getFaceCenter(face, getMiddlePoint(face.v1, face.v2));
+	res = new Vector3(
+		res.x - (res.x / radius) / 8,
+		res.y - (res.y / radius) / 8,
+		res.z - (res.z / radius) / 8
+	);
+
+	drawSphere(res);
+
+	return res;
 }
 
 //==============================<init>==============================
@@ -219,6 +338,35 @@ function subdivide() {
     faces = faces2;    
 }
 
+function calcTransformMatrixes() {
+	matrixes = new Matrix4x4[faces.length];
+
+	for (var i : int = 0; i < faces.length; i++) {
+		var p1 = new Piramide();
+
+		p1.v1 = new Vector3(-0.5, 0, -Mathf.Sqrt(3) / 6 );
+		p1.v2 = new Vector3(0.5,  0, -Mathf.Sqrt(3) / 6 );
+		p1.v3 = new Vector3(0,    0, Mathf.Sqrt(3) / 3  );
+		p1.v4 = new Vector3(0,    1, 0                  );
+
+		var p2 = new Piramide();
+
+		p2.v1 = faces[i].v1;
+		p2.v2 = faces[i].v2;
+		p2.v3 = faces[i].v3;
+		p2.v4 = getV4(faces[i]);
+
+		/*
+		var transformMatrix = new Matrix4x4();
+		var rotation = Quaternion.identity;
+		// Assign a rotation 30 degrees around the y axis
+		rotation.eulerAngles = Vector3(90, 0, 0);
+		transformMatrix.SetTRS(Vector3.zero, rotation, Vector3.one);
+		*/
+		matrixes[i] = getMatrix(p1, p2);// * transformMatrix;
+	}
+}
+
 //==============================<Class>==============================
 
 public class TriangleIndices {
@@ -247,4 +395,11 @@ public class TriangleOptions {
 		this.pos = pos;
 		this.rot = rot;
 	}
+}
+
+public class Piramide {
+	public var v1 : Vector3;
+	public var v2 : Vector3;
+	public var v3 : Vector3;
+	public var v4 : Vector3;
 }
