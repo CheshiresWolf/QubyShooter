@@ -33,7 +33,7 @@ public class Generator : MonoBehaviour {
 			this.v2 = v2;
 			this.v3 = v3;
 		}
-	}
+	};
 
 	class Piramide {
 		public Vector3 v1;
@@ -47,7 +47,7 @@ public class Generator : MonoBehaviour {
 			this.v3 = v3;
 			this.v4 = v4;
 		}
-	}
+	};
 
 	class PositionerResult {
 		public Vector3 position;
@@ -61,7 +61,7 @@ public class Generator : MonoBehaviour {
 	        scale    = new Vector3(s, s, s);
 	        matrix   = m;
 	    }
-	}
+	};
 
 	class Positioner {
 	    float N;
@@ -102,7 +102,7 @@ public class Generator : MonoBehaviour {
 	    }
 
 
-	    public PositionerResult getMatrixForDestination(Vector3 bv1, Vector3 bv2, Vector3 bv3, float perspFactor) {
+	    public PositionerResult getMatrixForDestination(Vector3 bv1, Vector3 bv2, Vector3 bv3) {
 	        Vector3 center = (bv1 + bv2 + bv3) / 3.0f;
 
 	        Quaternion rotation = new Quaternion();
@@ -118,6 +118,8 @@ public class Generator : MonoBehaviour {
 	        ) / 3.0f;
 
 	        Matrix4x4 nm = Matrix4x4.TRS(center, rotation, scale * Vector3.one).inverse;
+
+            float perspFactor = 1 / (1 - 1 / center.magnitude);
 
 			//nm = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(offsetAngle, Vector3.up), Vector3.one) * nm;
 
@@ -155,7 +157,7 @@ public class Generator : MonoBehaviour {
 
 	        return new Vector4(x, y, z, w);
 	    }
-	}
+	};
 
 	//=====================<Init>=====================
 
@@ -241,7 +243,7 @@ public class Generator : MonoBehaviour {
 	    );
 	}
 
-	//==================</Matrixes>===================	
+	//==================</Matrixes>===================
 
 	//=====================<Draw>=====================
 
@@ -284,12 +286,11 @@ public class Generator : MonoBehaviour {
 		PositionerResult result = positioner.getMatrixForDestination(
 	        face.v2,
 	        face.v1,
-	        face.v3,
-	        perspFactor
+	        face.v3
 	    );
 
 	    body.transform.position   = result.position;
-	    body.transform.rotation   = result.rotation ;
+	    body.transform.rotation   = result.rotation;
 	    body.transform.localScale = result.scale;
 
 	    Matrix4x4 matrix = result.matrix;
@@ -335,7 +336,7 @@ public class Generator : MonoBehaviour {
 		);
 	}
 
-	Vector3 getMiddlePoint(Vector3 p1, Vector3 p2) {		
+	Vector3 getMiddlePoint(Vector3 p1, Vector3 p2) {
 		return new Vector3(
 			(p1.x + p2.x) / 2.0f,
 			(p1.y + p2.y) / 2.0f,
@@ -403,4 +404,4 @@ public class Generator : MonoBehaviour {
 	void Update () {
 	
 	}
-}
+};
