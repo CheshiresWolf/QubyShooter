@@ -10,9 +10,14 @@ public class Generator : MonoBehaviour {
 	public float radius;
 	public float perspFactor;
 
+	public bool showSpheres = true;
+
+	//static float offsetAngle = 0;
+
 	//Local data
-	Matrix4x4[] matrixes;
+	//Matrix4x4[] matrixes;
 	Triangles[] faces;
+	Positioner positioner;
 
 	//Subdivision degree
 	public int subDegree = 1;
@@ -42,6 +47,114 @@ public class Generator : MonoBehaviour {
 			this.v3 = v3;
 			this.v4 = v4;
 		}
+	}
+
+	class PositionerResult {
+		public Vector3 position;
+		public Quaternion rotation;
+		public Vector3 scale;
+		public Matrix4x4 matrix;
+
+	    public PositionerResult(Vector3 p, Quaternion r, float s, Matrix4x4 m) {
+	        position = p;
+	        rotation = r;
+	        scale    = new Vector3(s, s, s);
+	        matrix   = m;
+	    }
+	}
+
+	class Positioner {
+	    float N;
+	    float O;
+	    float P;
+
+	    float LP;
+	    float NJ;
+	    float OK;
+	    float PH;
+	    float PD;
+	    float GOLPPHOK;
+	    float LPOCPDOK;
+	    float LPNFPHNJ;
+	    float BNLPPDNJGOLPPHOKLPOCPDOKLPNFPHNJ;
+
+	    public Positioner() {}
+
+	    public Positioner(Vector3 bv1, Vector3 bv2, Vector3 bv3, Vector3 v4) {
+	        setSource(bv1, bv2, bv3, v4);
+	    }
+
+	    public void setSource(Vector3 bv1, Vector3 bv2, Vector3 bv3, Vector3 v4) {
+	        N = v4.x;
+	        O = v4.y;
+	        P = v4.z;
+	        LP = bv3.z - P;
+	        NJ = N - bv3.x;
+	        OK = O - bv3.y;
+	        PH = P - bv2.z;
+	        PD = P - bv1.z;
+	        GOLPPHOK = (bv2.y - O) * LP - PH * OK;
+	        LPOCPDOK = LP * (O - bv1.y) + PD * OK;
+	        LPNFPHNJ = LP * (N - bv2.x) + PH * NJ;
+	        BNLPPDNJGOLPPHOKLPOCPDOKLPNFPHNJ = (
+	            ( (bv1.x - N) * LP - PD * NJ ) * GOLPPHOK - LPOCPDOK * LPNFPHNJ
+	        );
+	    }
+
+
+	    public PositionerResult getMatrixForDestination(Vector3 bv1, Vector3 bv2, Vector3 bv3, float perspFactor) {
+	        Vector3 center = (bv1 + bv2 + bv3) / 3.0f;
+
+	        Quaternion rotation = new Quaternion();
+	        rotation.SetLookRotation(
+	            bv2 - center,
+	            Vector3.Cross(bv3 - bv2, bv1 - bv2)
+	        );
+
+	        float scale = (
+	            Vector3.Distance(bv1, bv2) +
+	            Vector3.Distance(bv2, bv3) +
+	            Vector3.Distance(bv3, bv1)
+	        ) / 3.0f;
+
+	        Matrix4x4 nm = Matrix4x4.TRS(center, rotation, scale * Vector3.one).inverse;
+
+			//nm = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(offsetAngle, Vector3.up), Vector3.one) * nm;
+
+	        Vector3 v1 = nm.MultiplyPoint3x4(bv1);
+	        Vector3 v2 = nm.MultiplyPoint3x4(bv2);
+	        Vector3 v3 = nm.MultiplyPoint3x4(bv3);
+	        Vector3 v4 = nm.MultiplyPoint3x4(
+	            center - center.normalized * perspFactor
+	        );
+	        // todo - mul by scale?
+	        //Vector4 v4 = new Vector4(0.0f, 1.0f, 0.0f, 1.0f) / (1.0f - 1.0f / center.magnitude);
+
+	        Matrix4x4 matrix = new Matrix4x4();
+
+	        matrix.SetRow(0, getRow( v1.x, v2.x, v3.x, v4.x        ));
+	        matrix.SetRow(1, getRow( v1.y, v2.y, v3.y, v4.y        ));
+	        matrix.SetRow(2, getRow( v1.z, v2.z, v3.z, v4.z        ));
+	        matrix.SetRow(3, getRow( 1.0f, 1.0f, 1.0f, perspFactor ));
+
+	        return new PositionerResult(center, rotation, scale, matrix);
+	    }
+
+	    Vector4 getRow(float A, float E, float I, float M) {
+
+	        float IM = I - M;
+	        float LPEMPHIM = LP * (E - M) + PH * IM;
+
+	        float x = (
+	            ( LP * (A - M) + PD * IM ) * GOLPPHOK + LPOCPDOK * LPEMPHIM
+	        ) / BNLPPDNJGOLPPHOKLPOCPDOKLPNFPHNJ;
+
+	        float y = (LPEMPHIM + x * LPNFPHNJ) / GOLPPHOK;
+	        float z = (IM + x * NJ + y * OK) / LP;
+	        float w = M - N * x - O * y - P * z;
+
+	        return new Vector4(x, y, z, w);
+	    }
 	}
 
 	//=====================<Init>=====================
@@ -118,115 +231,14 @@ public class Generator : MonoBehaviour {
 	//===================<Matrixes>===================
 
 	void calcMatrixes() {
-		matrixes = new Matrix4x4[faces.Length];
+		float s33 = Mathf.Sqrt(3.0f) / 3.0f;
 
-		Piramide p1 = new Piramide(
-			new Vector3(-0.5f, 0.0f, -Mathf.Sqrt(3.0f) / 6.0f ),
-			new Vector3( 0.5f, 0.0f, -Mathf.Sqrt(3.0f) / 6.0f ),
-			new Vector3( 0.0f, 0.0f,  Mathf.Sqrt(3.0f) / 3.0f ),
-			new Vector3( 0.0f, 1.0f,                     0.0f )
-		);
-
-		for (int i = 0; i < faces.Length; i++) {
-			Piramide p2 = new Piramide(
-				faces[i].v1,
-				faces[i].v2,
-				faces[i].v3,
-				getV4(faces[i])
-			);
-
-			matrixes[i] = getMatrix(p1, p2);
-		}
-	}
-
-	Matrix4x4 getMatrix(Piramide p1, Piramide p2) {
-		
-		Matrix4x4 result = new Matrix4x4();
-		
-		result.SetRow(
-			0, getRow(
-				p1.v1, p1.v2, p1.v3, p1.v4,
-				p2.v1.x, p2.v2.x, p2.v3.x, p2.v4.x
-			)
-		);
-		
-		result.SetRow(
-			1, getRow(
-				p1.v1, p1.v2, p1.v3, p1.v4,
-				p2.v1.y, p2.v2.y, p2.v3.y, p2.v4.y
-			)
-		);
-		
-		result.SetRow(
-			2, getRow(
-				p1.v1, p1.v2, p1.v3, p1.v4,
-				p2.v1.z, p2.v2.z, p2.v3.z, p2.v4.z
-			)
-		);
-		
-		result.SetRow(
-			3, getRow(
-				p1.v1, p1.v2, p1.v3, p1.v4,
-				1, 1, 1, perspFactor
-			)
-		);
-		
-		return result;
-	}
-
-	Vector4 getRow(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4, float c1, float c2, float c3, float c4) {
-		
-		float A = c1;
-		float B = v1.x;
-		float C = v1.y;
-		float D = v1.z;
-		float E = c2;
-		float F = v2.x;
-		float G = v2.y;
-		float H = v2.z;
-		float I = c3;
-		float J = v3.x;
-		float K = v3.y;
-		float L = v3.z;
-		float M = c4;
-		float N = v4.x;
-		float O = v4.y;
-		float P = v4.z;
-		
-		float x = (
-			(
-			(L - P) * (A - M) + (P - D) * (I - M)
-			) * (
-			(G - O) * (L - P) - (P - H) * (O - K)
-			) + (
-			(L - P) * (O - C) + (P - D) * (O - K)
-			) * (
-			(L - P) * (E - M) + (P - H) * (I - M)
-			)
-			) / (
-			(
-			(B - N) * (L - P) - (P - D) * (N - J)
-			) * (
-			(G - O) * (L - P) - (P - H) * (O - K)
-			) - (
-			(L - P) * (O - C) + (P - D) * (O - K)
-			) * (
-			(L - P) * (N - F) + (P - H) * (N - J)
-			)
-		);
-		
-		float y = (
-			(L - P) * (E - M) + (P - H) * (I - M) +
-			x * ( (L - P) * (N - F) + (P - H) * (N - J) )
-			) / (
-			(G - O) * (L - P) - (P - H) * (O - K)
-		);
-		
-		float z = ( I - M + x * (N - J) + y * (O - K) ) / (L - P);
-
-		float w = M - N * x - O * y - P * z;
-		
-		return new Vector4(x, y, z, w);
+	    positioner = new Positioner(
+	        new Vector3( -0.5f, 0.0f, -s33 / 2.0f ), // -0.288675
+	        new Vector3(  0.0f, 0.0f,  s33        ), //  0.577350
+	        new Vector3(  0.5f, 0.0f, -s33 / 2.0f ), // -0.288675
+	        new Vector3(  0.0f, 1.0f,  0.0f       )
+	    );
 	}
 
 	//==================</Matrixes>===================	
@@ -255,40 +267,51 @@ public class Generator : MonoBehaviour {
 	}
 
 	void drawFaces() {
-		setColor(drawTriangle(faces[0], matrixes[0]), Color.green);
+		//setColor(drawTriangle(faces[0], matrixes[0]), Color.green);
+		setColor(drawTriangle(faces[0]), Color.green);
 		
 		for (int i = 1; i < faces.Length; i++) {
-			setColor(drawTriangle(faces[i], matrixes[i]), Color.blue);
+			//setColor(drawTriangle(faces[i], matrixes[i]), Color.blue);
+			setColor(drawTriangle(faces[i]), Color.blue);
 		}
 	}
 
-	GameObject drawTriangle(Triangles face, Matrix4x4 matrix) {
+	//GameObject drawTriangle(Triangles face, Matrix4x4 matrix) {
+	GameObject drawTriangle(Triangles face) {
 		GameObject body = Instantiate(masterPrefab) as GameObject;
-		
 		body.transform.parent = parent.transform;
 
-		Mesh mesh = new Mesh();
-		
-		mesh.vertices  = masterMesh.vertices;
-		mesh.triangles = masterMesh.triangles;
-		mesh.uv        = masterMesh.uv;
-		mesh.normals   = masterMesh.normals;
-		
-		Vector3[] vertices = mesh.vertices;
-		Vector3[] normals  = mesh.normals;
-		
-		for (int i = 0; i < vertices.Length; i++) {
-			vertices[i] = matrix.MultiplyPoint(vertices[i]);
-			normals[i]  = matrix.inverse.transpose.MultiplyPoint(normals[i]) * -1;
-		}
-		mesh.vertices = vertices;
-		mesh.normals  = normals;
+		PositionerResult result = positioner.getMatrixForDestination(
+	        face.v2,
+	        face.v1,
+	        face.v3,
+	        perspFactor
+	    );
 
-		MeshFilter meshFilter = body.GetComponent("MeshFilter") as MeshFilter;
-		meshFilter.mesh = mesh;
-		
-		Debug.Log("BuildIcosaedron | drawTriangle | mesh size : " + meshFilter.mesh.vertices.Length);
-		
+	    body.transform.position   = result.position;
+	    body.transform.rotation   = result.rotation ;
+	    body.transform.localScale = result.scale;
+
+	    Matrix4x4 matrix = result.matrix;
+
+	    Matrix4x4 invTran = matrix.inverse.transpose;
+
+	    Vector3[] vertices = masterMesh.vertices;
+	    Vector3[] normals  = masterMesh.normals;
+
+	    for (int i = vertices.Length - 1; i >= 0; --i) {
+	        vertices[i] = matrix.MultiplyPoint(vertices[i]);
+	        normals[i]  = invTran.MultiplyPoint(normals[i]);
+	    }
+
+		MeshFilter mf = body.GetComponent("MeshFilter") as MeshFilter;
+	    Mesh mfm = mf.mesh;
+
+	    mfm.vertices  = vertices;
+	    mfm.normals   = normals;
+		mfm.triangles = masterMesh.triangles;
+		mfm.uv        = masterMesh.uv;
+
 		return body;
 	}
 
@@ -356,8 +379,8 @@ public class Generator : MonoBehaviour {
 	}
 
 	void setColor(GameObject body, Color color) {
-		MeshRenderer gameObjectRenderer = body.GetComponent("MeshRenderer") as MeshRenderer;
-		gameObjectRenderer.material.color = color;
+		//MeshRenderer gameObjectRenderer = body.GetComponent("MeshRenderer") as MeshRenderer;
+		//gameObjectRenderer.material.color = color;
 	}
 
 	//===================</Utils>=====================
@@ -372,7 +395,7 @@ public class Generator : MonoBehaviour {
 
 		calcMatrixes();
 
-		drawSceleton();
+		if (showSpheres) drawSceleton();
 		drawFaces();
 	}
 	
