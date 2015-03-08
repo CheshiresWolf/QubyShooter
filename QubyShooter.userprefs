@@ -1,8 +1,9 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/scripts/Generator.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/scripts/EditorCamera.cs">
     <Files>
-      <File FileName="Assets/scripts/Generator.cs" Line="407" Column="1" />
+      <File FileName="Assets/scripts/EditorCamera.cs" Line="119" Column="1" />
+      <File FileName="Assets/scripts/Generator.cs" Line="385" Column="3" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
