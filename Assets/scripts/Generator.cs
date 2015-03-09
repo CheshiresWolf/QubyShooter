@@ -12,12 +12,13 @@ public class Generator : MonoBehaviour {
 
 	public bool showSpheres = true;
 
-	//static float offsetAngle = 0;
-
+	public Mesh[] meshes;
+	
 	//Local data
-	//Matrix4x4[] matrixes;
 	Triangles[] faces;
 	Positioner positioner;
+
+	int currentMeshIndex = 0;
 
 	//Subdivision degree
 	public int subDegree = 1;
@@ -28,24 +29,13 @@ public class Generator : MonoBehaviour {
 		public Vector3 v2;
 		public Vector3 v3;
 
+		public PositionerResult positioner;
+		public GameObject body;
+
 		public Triangles(Vector3 v1, Vector3 v2, Vector3 v3) {
 			this.v1 = v1;
 			this.v2 = v2;
 			this.v3 = v3;
-		}
-	};
-
-	class Piramide {
-		public Vector3 v1;
-		public Vector3 v2;
-		public Vector3 v3;
-		public Vector3 v4;
-
-		public Piramide(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4) {
-			this.v1 = v1;
-			this.v2 = v2;
-			this.v3 = v3;
-			this.v4 = v4;
 		}
 	};
 
@@ -270,50 +260,56 @@ public class Generator : MonoBehaviour {
 
 	void drawFaces() {
 		//setColor(drawTriangle(faces[0], matrixes[0]), Color.green);
-		setColor(drawTriangle(faces[0]), Color.green);
+		//setColor(drawTriangle(faces[0]), Color.green);
 		
-		for (int i = 1; i < faces.Length; i++) {
+		for (int i = 0; i < faces.Length; i++) {
 			//setColor(drawTriangle(faces[i], matrixes[i]), Color.blue);
-			setColor(drawTriangle(faces[i]), Color.blue);
+			//setColor(
+			drawTriangle(faces[i]).name = "triangle_" + i;
+			//, Color.blue);
 		}
 	}
 
 	//GameObject drawTriangle(Triangles face, Matrix4x4 matrix) {
 	GameObject drawTriangle(Triangles face) {
-		GameObject body = Instantiate(masterPrefab) as GameObject;
-		body.transform.parent = parent.transform;
+		face.body = Instantiate(masterPrefab) as GameObject;
+		face.body.transform.parent = parent.transform;
 
-		PositionerResult result = positioner.getMatrixForDestination(
+		face.positioner = positioner.getMatrixForDestination(
 	        face.v2,
 	        face.v1,
 	        face.v3
 	    );
 
-	    body.transform.position   = result.position;
-	    body.transform.rotation   = result.rotation;
-	    body.transform.localScale = result.scale;
+	    face.body.transform.position   = face.positioner.position;
+	    face.body.transform.rotation   = face.positioner.rotation;
+	    face.body.transform.localScale = face.positioner.scale;
 
-	    Matrix4x4 matrix = result.matrix;
+		return changeMesh(face, masterMesh);
+	}
+
+	GameObject changeMesh(Triangles face, Mesh mesh) {
+	    Matrix4x4 matrix = face.positioner.matrix;
 
 	    Matrix4x4 invTran = matrix.inverse.transpose;
 
-	    Vector3[] vertices = masterMesh.vertices;
-	    Vector3[] normals  = masterMesh.normals;
+	    Vector3[] vertices = mesh.vertices;
+	    Vector3[] normals  = mesh.normals;
 
 	    for (int i = vertices.Length - 1; i >= 0; --i) {
 	        vertices[i] = matrix.MultiplyPoint(vertices[i]);
 	        normals[i]  = invTran.MultiplyPoint(normals[i]);
 	    }
 
-		MeshFilter mf = body.GetComponent("MeshFilter") as MeshFilter;
+		MeshFilter mf = face.body.GetComponent("MeshFilter") as MeshFilter;
 	    Mesh mfm = mf.mesh;
 
 	    mfm.vertices  = vertices;
 	    mfm.normals   = normals;
-		mfm.triangles = masterMesh.triangles;
-		mfm.uv        = masterMesh.uv;
+		mfm.triangles = mesh.triangles;
+		mfm.uv        = mesh.uv;
 
-		return body;
+		return face.body;
 	}
 
 	//====================</Draw>=====================
@@ -382,6 +378,15 @@ public class Generator : MonoBehaviour {
 	void setColor(GameObject body, Color color) {
 		//MeshRenderer gameObjectRenderer = body.GetComponent("MeshRenderer") as MeshRenderer;
 		//gameObjectRenderer.material.color = color;
+	}
+	
+	public void changeMesh(int index) {
+		changeMesh(faces[index], meshes[currentMeshIndex]);
+	}
+
+	public void setMeshIndex(int index) {
+		Debug.Log("Generator | setMeshIndex | index : " + index);
+		currentMeshIndex = index;
 	}
 
 	//===================</Utils>=====================

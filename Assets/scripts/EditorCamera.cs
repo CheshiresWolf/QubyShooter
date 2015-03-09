@@ -1,12 +1,16 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class EditorCamera : MonoBehaviour {
 
 	public GameObject camera;
+	public GameObject icosaedron;
 	public float radius;
+	public Text infoText;
 
 	Keys pressedKeys;
+	Generator generator_script;
 
 	Quaternion rotation;
 	Vector3 currentRotation = new Vector3(0, 0, 0);
@@ -60,7 +64,11 @@ public class EditorCamera : MonoBehaviour {
 			Debug.Log("EditorCamera | selection | hit : " + hit);
 			GameObject face = hit.transform.gameObject;
 
-			setColor(face, Color.red);          
+			string[] splitBuf = face.name.Split('_');
+			//setColor(face, Color.red);
+			generator_script.changeMesh(int.Parse(splitBuf[1]));
+
+			infoText.text = "name : " + face.name + ";\npos : " + face.transform.position+ ";\nrot : " + face.transform.rotation;
 		}
 	}
 
@@ -76,6 +84,8 @@ public class EditorCamera : MonoBehaviour {
 
 		pressedKeys = new Keys();
 		rotation = new Quaternion();
+
+		generator_script = icosaedron.GetComponent<Generator>();
 	}
 	
 	// Update is called once per frame
@@ -108,7 +118,9 @@ public class EditorCamera : MonoBehaviour {
 
 		
 		if (Input.GetKeyDown(KeyCode.Mouse0)) {
-			selection();
+			if (!UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) {
+				selection();
+			}
 		}
 
 		//pressedKeys.print();
