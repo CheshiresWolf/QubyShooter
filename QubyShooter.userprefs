@@ -1,10 +1,10 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/scripts/EditorCamera.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/scripts/Generator.cs">
     <Files>
-      <File FileName="Assets/scripts/FPSMeter.cs" Line="53" Column="4" />
+      <File FileName="Assets/scripts/Generator.cs" Line="407" Column="44" />
+      <File FileName="Assets/scripts/FPSMeter.cs" Line="1" Column="1" />
       <File FileName="Assets/scripts/EditorCamera.cs" Line="67" Column="43" />
-      <File FileName="Assets/scripts/Generator.cs" Line="412" Column="3" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

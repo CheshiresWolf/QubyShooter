@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 
 public class Generator : MonoBehaviour {
 	//Set data from editor
@@ -28,6 +29,8 @@ public class Generator : MonoBehaviour {
 		public Vector3 v1;
 		public Vector3 v2;
 		public Vector3 v3;
+
+		public int meshIndex = 0;
 
 		public PositionerResult positioner;
 		public GameObject body;
@@ -376,12 +379,15 @@ public class Generator : MonoBehaviour {
 	}
 
 	void setColor(GameObject body, Color color) {
-		//MeshRenderer gameObjectRenderer = body.GetComponent("MeshRenderer") as MeshRenderer;
-		//gameObjectRenderer.material.color = color;
+		MeshRenderer gameObjectRenderer = body.GetComponent("MeshRenderer") as MeshRenderer;
+		gameObjectRenderer.material.color = color;
 	}
 	
 	public void changeMesh(int index) {
-		changeMesh(faces[index], meshes[currentMeshIndex]);
+		Triangles face = faces[index];
+		face.meshIndex = currentMeshIndex;
+
+		changeMesh(face, meshes[currentMeshIndex]);
 	}
 
 	public void setMeshIndex(int index) {
@@ -390,6 +396,22 @@ public class Generator : MonoBehaviour {
 	}
 
 	//===================</Utils>=====================
+	
+	//====================<File>======================
+
+	public void saveToFile() {
+		Debug.Log("Generator | saveToFile");
+		string res = "";
+
+		for (int i = 0; i < faces.Length; i++) {
+			res += i + ":" + faces[i].meshIndex + ";";
+		}
+		using (StreamWriter sw = new StreamWriter("Assets/levels/TestFile.txt")) {
+			sw.Write(res);
+		}
+	}
+	
+	//===================</File>======================
 
 	// Use this for initialization
 	void Start () {
