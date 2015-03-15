@@ -309,6 +309,7 @@ public class Generator : MonoBehaviour {
 		MeshFilter mf = face.body.GetComponent("MeshFilter") as MeshFilter;
 	    Mesh mfm = mf.mesh;
 
+        mfm.Clear();
 	    mfm.vertices  = vertices;
 	    mfm.normals   = normals;
 		mfm.triangles = mesh.triangles;
