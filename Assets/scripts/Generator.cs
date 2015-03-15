@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System;
+using System.Text;
 
 public class Generator : MonoBehaviour {
 	//Set data from editor
@@ -399,30 +401,69 @@ public class Generator : MonoBehaviour {
 	
 	//====================<File>======================
 
-	public void saveToFile() {
+	public void saveToFile(string name) {
 		Debug.Log("Generator | saveToFile");
 		string res = "";
 
 		for (int i = 0; i < faces.Length; i++) {
 			res += i + ":" + faces[i].meshIndex + ";";
 		}
-		using (StreamWriter sw = new StreamWriter("Assets/levels/TestFile.txt")) {
+		using (StreamWriter sw = new StreamWriter("Assets/levels/" + name)) {
 			sw.Write(res);
+		}
+	}
+
+	public void loadFromFile(string name) {
+		Debug.Log("Generator | loadFromFile");
+
+		string allFile = "";
+
+		try {
+			string line;
+			StreamReader theReader = new StreamReader("Assets/levels/" + name, Encoding.Default);
+
+			using (theReader) {
+				do {
+					line = theReader.ReadLine();
+					
+					if (line != null) {
+						allFile += line;
+					}
+				} while (line != null);
+
+				theReader.Close();
+			}
+		} catch (Exception e) {
+			Debug.Log("Generator | loadFromFile | error : " + e.Message);
+		}
+
+		string[] pairs = allFile.Split(';');
+
+		Debug.Log("Generator | loadFromFile | last pair : " + pairs[pairs.Length - 1]);
+
+		for (int i = 0; i < pairs.Length - 1; i++) {
+			string[] data = pairs[i].Split(':');
+			int faceIndex = int.Parse(data[0]);
+			int meshIndex = int.Parse(data[1]);
+
+			if ((faceIndex < faces.Length) && (meshIndex < meshes.Length)) {
+				changeMesh(faces[faceIndex], meshes[meshIndex]);
+			}
 		}
 	}
 	
 	//===================</File>======================
-
+	
 	// Use this for initialization
 	void Start () {
 		initIcosaedron();
-
+		
 		for (int i = 0; i < subDegree; i++) {
 			subdivide();
 		}
-
+		
 		calcMatrixes();
-
+		
 		if (showSpheres) drawSceleton();
 		drawFaces();
 	}

@@ -9,7 +9,7 @@ public class EditorCamera : MonoBehaviour {
 	public float radius;
 	public Text infoText;
 
-	Keys pressedKeys;
+	Keys pressedKeys = new Keys();
 	Generator generator_script;
 
 	Quaternion rotation;
@@ -82,7 +82,7 @@ public class EditorCamera : MonoBehaviour {
 		camera.transform.position = new Vector3(radius, 0, 0);
 		camera.transform.LookAt(Vector3.zero, Vector3.up);
 
-		pressedKeys = new Keys();
+		//pressedKeys = new Keys();
 		rotation = new Quaternion();
 
 		generator_script = icosaedron.GetComponent<Generator>();
