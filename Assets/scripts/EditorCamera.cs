@@ -9,46 +9,151 @@ public class EditorCamera : MonoBehaviour {
 	public float radius;
 	public Text infoText;
 
-	Keys pressedKeys = new Keys();
+	enum CameraMode { ORIGINAL, FREE, FREE_ORBIT };
+
+	CameraMode cameraMode = CameraMode.FREE;
+
+	EditorKeyMap keyMap = new EditorKeyMap();
+
 	Generator generator_script;
 
-	Quaternion rotation;
 	Vector3 currentRotation = new Vector3(0, 0, 0);
+	Vector3 position = Vector3.zero;
+	Quaternion rotation = Quaternion.identity;
 
 	RaycastHit hit = new RaycastHit();
     Ray ray;
 
-	class Keys {
-		public bool up;
-		public bool left;
-		public bool right;
-		public bool down;
+	class EditorKeyMap {
 
-		public Keys() {}
+		public KeyCode toggle    = KeyCode.Mouse0;
+		public KeyCode mouseLook = KeyCode.Mouse1;
 
-		public void print() {
-			Debug.Log("EditorCamera | pressedKeys(wasd) : (" + up + "," + left + "," + right + "," + down + ")");
-		}
+		public KeyCode lookUp    = KeyCode.UpArrow;
+		public KeyCode lookDown  = KeyCode.DownArrow;
+		public KeyCode lookLeft  = KeyCode.LeftArrow;
+		public KeyCode lookRight = KeyCode.RightArrow;
+
+		public KeyCode clockWise        = KeyCode.E;
+		public KeyCode counterClockWise = KeyCode.Q;
+		
+		public KeyCode forward = KeyCode.W;
+		public KeyCode left    = KeyCode.A;
+		public KeyCode back    = KeyCode.S;
+		public KeyCode right   = KeyCode.D;
+		public KeyCode up      = KeyCode.LeftControl;
+		public KeyCode down    = KeyCode.Space;
+
+		public KeyCode precise = KeyCode.LeftShift;
+
+		public EditorKeyMap() {}
+
 	};
 
 	void moveCamera() {
-		if (pressedKeys.up)   {
-			if (currentRotation.z < 90) currentRotation.z += 1;
+
+		if (cameraMode == CameraMode.ORIGINAL) {
+
+			if (Input.GetKey(KeyCode.W)) {
+				if (currentRotation.z < 90) currentRotation.z += 1;
+			}
+			if (Input.GetKey(KeyCode.S)) {
+				if (currentRotation.z > -90) currentRotation.z -= 1;
+			}
+
+			if (Input.GetKey(KeyCode.A)) currentRotation.y += 1;
+			if (Input.GetKey(KeyCode.D)) currentRotation.y -= 1;
+
+			Quaternion tempRotation = new Quaternion();
+
+			tempRotation.eulerAngles = currentRotation;
+
+			camera.transform.position = rotatePointAroundPivot(
+				camera.transform.position, Vector3.zero, tempRotation
+			);
+			currentRotation.y = 0;
+			currentRotation.z = 0;
+
+			camera.transform.LookAt(Vector3.zero, Vector3.up);
+
+		} else
+
+		if (cameraMode == CameraMode.FREE) {
+
+			float movSpeed = 0.1f;
+			float rotSpeed = 1;
+
+			if (Input.GetKey(keyMap.precise)) {
+				movSpeed /= 10;
+			}
+
+			// ==== Rotation ====
+			
+				if (Input.GetMouseButton(1)) {
+					rotation *= Quaternion.Euler(
+						-Input.GetAxis("Mouse Y"),
+						Input.GetAxis("Mouse X"),
+						0
+					);
+				}
+
+				if (Input.GetKey(keyMap.clockWise)) {
+					rotation *= Quaternion.Euler(0, 0, -rotSpeed);
+				}
+				if (Input.GetKey(keyMap.counterClockWise)) {
+					rotation *= Quaternion.Euler(0, 0, rotSpeed);
+				}
+
+				if (Input.GetKey(keyMap.lookUp)) {
+					rotation *= Quaternion.Euler(rotSpeed, 0, 0);
+				}
+				if (Input.GetKey(keyMap.lookDown)) {
+					rotation *= Quaternion.Euler(-rotSpeed, 0, 0);
+				}
+
+				if (Input.GetKey(keyMap.lookLeft)) {
+					rotation *= Quaternion.Euler(0, -rotSpeed, 0);
+				}
+				if (Input.GetKey(keyMap.lookRight)) {
+					rotation *= Quaternion.Euler(0, rotSpeed, 0);
+				}
+			
+			// ==================
+
+			// ==== Position ====
+
+				if (Input.GetKey(keyMap.forward)) {
+					position += rotation * (movSpeed * Vector3.forward);
+				}
+				if (Input.GetKey(keyMap.back)) {
+					position += rotation * (-movSpeed * Vector3.forward);
+				}
+
+				if (Input.GetKey(keyMap.left)) {
+					position += rotation * (-movSpeed * Vector3.right);
+				}
+				if (Input.GetKey(keyMap.right)) {
+					position += rotation * (movSpeed * Vector3.right);
+				}
+
+				if (Input.GetKey(keyMap.down)) {
+					position += rotation * (movSpeed * Vector3.up);
+				}
+				if (Input.GetKey(keyMap.up)) {
+					position += rotation * (-movSpeed * Vector3.up);
+				}
+
+			// ==================
+
+			camera.transform.position = position; // rotation * (radius * Vector3.back)
+			camera.transform.rotation = rotation;
+
+		} else
+
+		if (cameraMode == CameraMode.FREE_ORBIT) {
+
 		}
-		if (pressedKeys.down) {
-			if (currentRotation.z > -90) currentRotation.z -= 1;
-		}
 
-		if (pressedKeys.left)  currentRotation.y += 1;
-		if (pressedKeys.right) currentRotation.y -= 1;
-
-		rotation.eulerAngles = currentRotation;
-
-		camera.transform.position = rotatePointAroundPivot(camera.transform.position, Vector3.zero, rotation);
-		currentRotation.y = 0;
-		currentRotation.z = 0;
-
-		camera.transform.LookAt(Vector3.zero, Vector3.up);
 	}
 
 	Vector3 rotatePointAroundPivot(Vector3 point, Vector3 pivot, Quaternion angle) {
@@ -82,48 +187,31 @@ public class EditorCamera : MonoBehaviour {
 		camera.transform.position = new Vector3(radius, 0, 0);
 		camera.transform.LookAt(Vector3.zero, Vector3.up);
 
-		//pressedKeys = new Keys();
-		rotation = new Quaternion();
-
 		generator_script = icosaedron.GetComponent<Generator>();
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		if (Input.GetKeyDown(KeyCode.W)) {
-			pressedKeys.up    = true;
-		}
-		if (Input.GetKeyDown(KeyCode.S)) {
-			pressedKeys.down  = true;
-		}
-		if (Input.GetKeyDown(KeyCode.A)) {
-			pressedKeys.left  = true;
-		}
-		if (Input.GetKeyDown(KeyCode.D)) {
-			pressedKeys.right = true;
-		}
-
-		if (Input.GetKeyUp(KeyCode.W)) {
-			pressedKeys.up    = false;
-		}
-		if (Input.GetKeyUp(KeyCode.S)) {
-			pressedKeys.down  = false;
-		}
-		if (Input.GetKeyUp(KeyCode.A)) {
-			pressedKeys.left  = false;
-		}
-		if (Input.GetKeyUp(KeyCode.D)) {
-			pressedKeys.right = false;
-		}
-
 		
 		if (Input.GetKeyDown(KeyCode.Mouse0)) {
 			if (!UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) {
 				selection();
 			}
 		}
-
-		//pressedKeys.print();
+		
+		if (
+			cameraMode == CameraMode.FREE ||
+			cameraMode == CameraMode.FREE_ORBIT
+		) {
+			if (Input.GetKeyDown(keyMap.mouseLook)) {
+				Cursor.lockState = CursorLockMode.Locked; // .Locked .Confined
+				Cursor.visible = false;
+			}
+			if (Input.GetKeyUp(keyMap.mouseLook)) {
+				Cursor.lockState = CursorLockMode.None;
+				Cursor.visible = true;
+			}
+		}
 
 		moveCamera();
 	}
