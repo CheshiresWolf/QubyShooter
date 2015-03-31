@@ -387,7 +387,7 @@ public class Generator : MonoBehaviour {
 	}
 	
 	public void changeMesh(int index) {
-		Triangles face = faces[index];
+		Triangles face = faces[index] as Triangles;
 		face.meshIndex = currentMeshIndex;
 
 		changeMesh(face, meshes[currentMeshIndex]);
