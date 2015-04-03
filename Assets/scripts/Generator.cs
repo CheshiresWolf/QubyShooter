@@ -16,6 +16,8 @@ public class Generator : MonoBehaviour {
 	public bool showSpheres = true;
 
 	public Mesh[] meshes;
+
+	public GameObject player;
 	
 	//Local data
 	Triangles[] faces;
@@ -266,13 +268,17 @@ public class Generator : MonoBehaviour {
 	void drawFaces() {
 		//setColor(drawTriangle(faces[0], matrixes[0]), Color.green);
 		//setColor(drawTriangle(faces[0]), Color.green);
-		
+		GameObject[] triangles = new GameObject[faces.Length];
+
 		for (int i = 0; i < faces.Length; i++) {
 			//setColor(drawTriangle(faces[i], matrixes[i]), Color.blue);
 			//setColor(
-			drawTriangle(faces[i]).name = "triangle_" + i;
+			triangles[i] = drawTriangle(faces[i]);
+			triangles[i].name = "triangle_" + i;
 			//, Color.blue);
 		}
+
+		sendTriangles(triangles);
 	}
 
 	//GameObject drawTriangle(Triangles face, Matrix4x4 matrix) {
@@ -396,6 +402,12 @@ public class Generator : MonoBehaviour {
 	public void setMeshIndex(int index) {
 		Debug.Log("Generator | setMeshIndex | index : " + index);
 		currentMeshIndex = index;
+	}
+
+	public void sendTriangles(GameObject[] triangles) {
+		player.GetComponent<WorldDestroyer>().setTriangles(triangles);
+
+		Debug.Log("Generator | getTriangles | triangles.Length : " + triangles.Length);
 	}
 
 	//===================</Utils>=====================
