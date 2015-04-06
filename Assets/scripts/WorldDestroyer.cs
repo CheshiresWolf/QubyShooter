@@ -4,22 +4,31 @@ using System.Collections;
 public class WorldDestroyer : MonoBehaviour {
 	public GameObject player;
 
-	public float maxRange = 2.0f;
+	public float destroyCoeff = 2.0f;
 	public float step = 0.01f;
+	public float playerReactRange = 1.0f;
 
 	private TriangleAnimator[] animators;
 
-	private bool initialAnimation = true;
+	/*
+	 * 0 - idle
+	 * 1 - move to initial position
+	 * 2 - react on user moves
+	 */
+	private int   animationMode        = 0;
 	private float initialAnimationCoef = 0;
 
 	private class TriangleAnimator {
-		GameObject body;
+		public GameObject body;
 		//source
-		Vector3    sPos;
-		Quaternion sRot;
+		public Vector3    sPos;
+		public Quaternion sRot;
 		//destination
-		Vector3    dPos;
-		Quaternion dRot;
+		public Vector3    dPos;
+		public Quaternion dRot;
+
+		float trackPos  = 1.0f;
+		float trackStep = 0.05f;
 
 		public TriangleAnimator(GameObject triangle, float range) {
 			this.body = triangle;
@@ -46,18 +55,20 @@ public class WorldDestroyer : MonoBehaviour {
 				this.sPos.y + (this.dPos.y - this.sPos.y) * distanse,
 				this.sPos.z + (this.dPos.z - this.sPos.z) * distanse
 			);
-		
-			//this.body.transform.position.x = this.sPos.x + (this.dPos.x - this.sPos.x) / distanse;
-			//this.body.transform.position.y = this.sPos.y + (this.dPos.y - this.sPos.y) / distanse;
-			//this.body.transform.position.z = this.sPos.z + (this.dPos.z - this.sPos.z) / distanse;
 		}
 
 		public void moveToDestination() {
-			this.body.transform.position = new Vector3(
-				this.dPos.x,
-				this.dPos.y,
-				this.dPos.z
-			);
+			if (this.trackPos < 1.0f) {
+				this.trackPos += this.trackStep;
+				this.move(this.trackPos);
+			}
+		}
+
+		public void moveToSource() {
+			if (this.trackPos > 0.0f) {
+				this.trackPos -= this.trackStep;
+				this.move(this.trackPos);
+			}
 		}
 	}
 
@@ -69,12 +80,12 @@ public class WorldDestroyer : MonoBehaviour {
 		animators = new TriangleAnimator[triangles.Length];
 
 		for (int i = 0; i < triangles.Length; i++) {
-			animators[i] = new TriangleAnimator(triangles[i], maxRange);
+			animators[i] = new TriangleAnimator(triangles[i], destroyCoeff);
 		}
 
 		//new WaitForSeconds(5);
 		Debug.Log("WorldDestroyer | Update | start initial animation");
-		initialAnimation = false;
+		animationMode = 1;
 	}
 
 	// Use this for initialization
@@ -84,7 +95,7 @@ public class WorldDestroyer : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (!initialAnimation) {
+		if (animationMode == 1) {
 			if (initialAnimationCoef < 1) {
 				initialAnimationCoef += step;
 
@@ -93,9 +104,14 @@ public class WorldDestroyer : MonoBehaviour {
 				}
 			} else {
 				Debug.Log("WorldDestroyer | Update | initial animation complete");
-				initialAnimation = true;
-
-				for (int i = 0; i < animators.Length; i++) {
+				animationMode = 2;
+			}
+		}
+		if (animationMode == 2) {
+			for (int i = 0; i < animators.Length; i++) {
+				if (Vector3.Distance(player.transform.position, animators[i].sPos) <= playerReactRange) {
+					animators[i].moveToSource();
+				} else {
 					animators[i].moveToDestination();
 				}
 			}
