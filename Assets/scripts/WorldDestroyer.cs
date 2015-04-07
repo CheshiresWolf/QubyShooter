@@ -42,8 +42,13 @@ public class WorldDestroyer : MonoBehaviour {
 				this.sPos.z * posShift //+ (posShift * ((this.sPos.z < 0) ? -1 : 1) )
 			);
 	    	
-	    	//float rotShift = ...
-	    	//this.dRot = new Quaternion(...);
+	    	float rotShift = Random.Range(-1.0f, 1.0f);
+	    	this.dRot = new Quaternion(
+	    		this.sRot.x,
+	    		this.sRot.y,
+	    		this.sRot.z,
+	    		this.sRot.w + rotShift
+	    	);
 
 			//Debug.Log("WorldDestroyer | TriangleAnimator | sPos : " + sPos + "; dPos : " + dPos);
 		}
@@ -54,6 +59,13 @@ public class WorldDestroyer : MonoBehaviour {
 				this.sPos.x + (this.dPos.x - this.sPos.x) * distanse,
 				this.sPos.y + (this.dPos.y - this.sPos.y) * distanse,
 				this.sPos.z + (this.dPos.z - this.sPos.z) * distanse
+			);
+
+			this.body.transform.rotation = new Quaternion(
+				this.sRot.x,
+	    		this.sRot.y,
+	    		this.sRot.z,
+	    		this.sRot.w + (this.dRot.w - this.sRot.w) * distanse
 			);
 		}
 
