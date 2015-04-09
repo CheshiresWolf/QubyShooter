@@ -55,10 +55,17 @@ public class WorldDestroyer : MonoBehaviour {
 
 		//distanse : 0 - sPos ... 1 - dPos 
 		public void move(float distanse) {
+			//if (distanse < 0) {
+			//	distanse = 0;
+				//Debug.Log("WorldDestroyer | TriangleAnimator | move | distanse : " + distanse + "; velocity : " + velocity);
+			//}
+			float velocity = Mathf.Pow(distanse, 2.0f);
+			//Mathf.Sqrt(distanse);
+
 			this.body.transform.position = new Vector3(
-				this.sPos.x + (this.dPos.x - this.sPos.x) * distanse,
-				this.sPos.y + (this.dPos.y - this.sPos.y) * distanse,
-				this.sPos.z + (this.dPos.z - this.sPos.z) * distanse
+				this.sPos.x + (this.dPos.x - this.sPos.x) * velocity,
+				this.sPos.y + (this.dPos.y - this.sPos.y) * velocity,
+				this.sPos.z + (this.dPos.z - this.sPos.z) * velocity
 			);
 
 			this.body.transform.rotation = new Quaternion(
