@@ -155,8 +155,80 @@ public class GameCamera : MonoBehaviour {
 
 		if (cameraMode == CameraMode.ORBIT) {
 
+			if (Input.GetMouseButton(0)) {
+				//Debug.Log("GameCamera | moveCamera | mouse button 0");
+				rotation *= Quaternion.Euler(
+					-Input.GetAxis("Mouse Y"),
+					Input.GetAxis("Mouse X"),
+					0
+				);
+			}
+
+			if (Input.GetMouseButton(1)) {
+				Debug.Log("GameCamera | moveCamera | mouse button 1");
+				rotation = Quaternion.LookRotation(player.transform.position - camera.transform.position);
+				//camera.transform.LookAt(player.transform.position, Vector3.up);
+			}
+
+			if (Input.GetKey(keyMap.left)) {
+				Vector3 pivot = getPivot(player.transform.position, 3.5355f);
+				Debug.Log("GameCamera | moveCamera | keyMap.left | pivot : " + pivot);
+				camera.transform.position = rotatePointAroundPivot(
+					camera.transform.position,
+					pivot,
+					rotateAroundPoint(player.transform.position, 1.0f)
+				);
+				//camera.transform.position = mulPosRot(camera.transform.position, rotateAroundPoint(player.transform.position, 1.0f));
+			}
+			if (Input.GetKey(keyMap.right)) {
+				//Vector3 pivot = getPivot(player.transform.position, 3.5355f);
+				camera.transform.position = rotatePointAroundPivot(
+					camera.transform.position,
+					player.transform.position,
+					rotateAroundPoint(player.transform.position, -1.0f)
+				);
+				//camera.transform.position = mulPosRot(camera.transform.position, rotateAroundPoint(player.transform.position, -1.0f));
+			}
+
+			camera.transform.rotation = rotation;
 		}
 
+	}
+
+	Quaternion rotateAroundPoint(Vector3 point, float angle) {
+		float distance = Vector3.Distance(Vector3.zero, point);
+
+		//normalize
+		Vector3 nPoint = new Vector3(
+			(point.x != 0) ? (point.x / distance) : 0,
+			(point.y != 0) ? (point.y / distance) : 0,
+			(point.z != 0) ? (point.z / distance) : 0
+		);
+
+		return new Quaternion(
+			Mathf.Cos(angle / 2),
+			nPoint.x * Mathf.Sin(angle / 2),
+			nPoint.y * Mathf.Sin(angle / 2),
+			nPoint.z * Mathf.Sin(angle / 2)
+		);
+	}
+
+	Vector3 mulPosRot(Vector3 pos, Quaternion rot) {
+		Quaternion mul = new Quaternion(0, pos.x, pos.y, pos.z) * rot;
+
+		return new Vector3(mul.x, mul.y, mul.z);
+	}
+
+	Vector3 getPivot(Vector3 point, float distance) {
+		float centerDistance = Vector3.Distance(Vector3.zero, point);
+
+		Debug.Log("GameCamera | getPivot | centerDistance : " + centerDistance);
+
+		return new Vector3(
+			(point.x != 0) ? (centerDistance * distance / point.x) : 0,
+			(point.y != 0) ? (centerDistance * distance / point.y) : 0,
+			(point.z != 0) ? (centerDistance * distance / point.z) : 0
+		);
 	}
 
 	Vector3 rotatePointAroundPivot(Vector3 point, Vector3 pivot, Quaternion angle) {
@@ -167,19 +239,11 @@ public class GameCamera : MonoBehaviour {
 	void Start () {
 		radius = icosaedron.GetComponent<Generator>().radius;
 
-		//camera.transform.position = new Vector3(0, 0, (radius - player.transform.position.z));
-		//camera.transform.LookAt(Vector3.zero, Vector3.up);
-		player.transform.position = new Vector3(0, 0, radius - 0.5f);
+		player.transform.position = new Vector3( 0,        0, radius - 0.5f    );
+		camera.transform.position = new Vector3( 0, -3.5355f, radius - 3.5355f );
 
 		if (cameraMode == CameraMode.ORBIT) {
-			//camera.transform.position = new Vector3(0.0f, 0.0f, 1.0f);
-			//camera.transform.position.y -= 3.5355f;
-			Vector3 pos = camera.transform.position;
-			pos.y += 3.5355f;
-			pos.z  = 3.5355f;
-			camera.transform.position = pos;//1.4645f;
-
-			camera.transform.LookAt(player.transform.position, Vector3.up);
+			rotation = Quaternion.LookRotation(player.transform.position - camera.transform.position);
 		}
 	}
 	
@@ -188,7 +252,8 @@ public class GameCamera : MonoBehaviour {
 		
 		if (
 			cameraMode == CameraMode.FREE ||
-			cameraMode == CameraMode.FREE_ORBIT
+			cameraMode == CameraMode.FREE_ORBIT ||
+			cameraMode == CameraMode.ORBIT
 		) {
 			if (Input.GetKeyDown(keyMap.mouseLook)) {
 				Cursor.lockState = CursorLockMode.Locked; // .Locked .Confined
