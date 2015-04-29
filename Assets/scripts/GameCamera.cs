@@ -23,6 +23,8 @@ public class GameCamera : MonoBehaviour {
 	RaycastHit hit = new RaycastHit();
     Ray ray;
 
+    Quaternion plusOneDegree, minusOneDegree;
+
 	class EditorKeyMap {
 
 		public KeyCode toggle    = KeyCode.Mouse0;
@@ -171,23 +173,26 @@ public class GameCamera : MonoBehaviour {
 			}
 
 			if (Input.GetKey(keyMap.left)) {
+				/*
 				Vector3 pivot = getPivot(player.transform.position, 3.5355f);
 				Debug.Log("GameCamera | moveCamera | keyMap.left | pivot : " + pivot);
 				camera.transform.position = rotatePointAroundPivot(
 					camera.transform.position,
 					pivot,
 					rotateAroundPoint(player.transform.position, 1.0f)
-				);
-				//camera.transform.position = mulPosRot(camera.transform.position, rotateAroundPoint(player.transform.position, 1.0f));
+				);*/
+				camera.transform.position = plusOneDegree * camera.transform.position;
 			}
 			if (Input.GetKey(keyMap.right)) {
-				//Vector3 pivot = getPivot(player.transform.position, 3.5355f);
+				/*
+				Vector3 pivot = getPivot(player.transform.position, 3.5355f);
 				camera.transform.position = rotatePointAroundPivot(
 					camera.transform.position,
 					player.transform.position,
 					rotateAroundPoint(player.transform.position, -1.0f)
 				);
-				//camera.transform.position = mulPosRot(camera.transform.position, rotateAroundPoint(player.transform.position, -1.0f));
+				*/
+				camera.transform.position = minusOneDegree * camera.transform.position;
 			}
 
 			camera.transform.rotation = rotation;
@@ -206,17 +211,18 @@ public class GameCamera : MonoBehaviour {
 		);
 
 		return new Quaternion(
-			Mathf.Cos(angle / 2),
-			nPoint.x * Mathf.Sin(angle / 2),
-			nPoint.y * Mathf.Sin(angle / 2),
-			nPoint.z * Mathf.Sin(angle / 2)
+			Mathf.Cos(angle / 2.0f),
+			nPoint.x * Mathf.Sin(angle / 2.0f),
+			nPoint.y * Mathf.Sin(angle / 2.0f),
+			nPoint.z * Mathf.Sin(angle / 2.0f)
 		);
 	}
 
 	Vector3 mulPosRot(Vector3 pos, Quaternion rot) {
-		Quaternion mul = new Quaternion(0, pos.x, pos.y, pos.z) * rot;
+		//Quaternion qPos = new Quaternion(0, pos.x, pos.y, pos.z);
+		//Quaternion mul  = rot * pos;//qPos;
 
-		return new Vector3(mul.x, mul.y, mul.z);
+		return rot * pos;//new Vector3(mul.x, mul.y, mul.z);
 	}
 
 	Vector3 getPivot(Vector3 point, float distance) {
@@ -244,6 +250,9 @@ public class GameCamera : MonoBehaviour {
 
 		if (cameraMode == CameraMode.ORBIT) {
 			rotation = Quaternion.LookRotation(player.transform.position - camera.transform.position);
+
+			plusOneDegree  = rotateAroundPoint(player.transform.position,  Mathf.PI / 180.0f);
+    		minusOneDegree = rotateAroundPoint(player.transform.position, -Mathf.PI / 180.0f);
 		}
 	}
 	
