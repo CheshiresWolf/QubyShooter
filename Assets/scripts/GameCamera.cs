@@ -199,6 +199,27 @@ public class GameCamera : MonoBehaviour {
 				rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
 			}
 
+			if (Input.GetKey(keyMap.clockWise)) {
+				Vector3 normal = Vector3.Cross(Vector3.zero - player.transform.position, Vector3.zero - camera.transform.position);
+				Vector3 contrNormal = Vector3.Cross(Vector3.zero - normal, Vector3.zero - player.transform.position);
+
+				Quaternion newRot = rotateAroundVector(contrNormal, -Mathf.PI / 180.0f);
+				player.transform.position = newRot * player.transform.position;
+				camera.transform.position = newRot * camera.transform.position;
+
+				rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
+			}
+			if (Input.GetKey(keyMap.counterClockWise)) {
+				Vector3 normal = Vector3.Cross(Vector3.zero - player.transform.position, Vector3.zero - camera.transform.position);
+				Vector3 contrNormal = Vector3.Cross(Vector3.zero - normal, Vector3.zero - player.transform.position);
+
+				Quaternion newRot = rotateAroundVector(contrNormal, Mathf.PI / 180.0f);
+				player.transform.position = newRot * player.transform.position;
+				camera.transform.position = newRot * camera.transform.position;
+
+				rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
+			}
+
 			camera.transform.rotation = rotation;
 		}
 
