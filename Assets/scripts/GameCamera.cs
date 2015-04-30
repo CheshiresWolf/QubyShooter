@@ -24,8 +24,7 @@ public class GameCamera : MonoBehaviour {
     Ray ray;
 
     Quaternion plusOneDegree, minusOneDegree;
-    float cameraOrbitAngle = 0.0f;
-    float cameraOrbitAngleShift = Mathf.PI / 90.0f;
+    float cameraOrbitAngle = Mathf.PI / 90.0f;
 
 	class EditorKeyMap {
 
@@ -174,21 +173,29 @@ public class GameCamera : MonoBehaviour {
 			}
 
 			if (Input.GetKey(keyMap.left)) {
-				cameraOrbitAngle += cameraOrbitAngleShift;
-				camera.transform.position = plusOneDegree * camera.transform.position;
+				camera.transform.position = rotateAroundVector(player.transform.position,  cameraOrbitAngle) * camera.transform.position;
 				rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
 			}
 			if (Input.GetKey(keyMap.right)) {
-				cameraOrbitAngle -= cameraOrbitAngleShift;
-				camera.transform.position = minusOneDegree * camera.transform.position; 
+				camera.transform.position = rotateAroundVector(player.transform.position,  -cameraOrbitAngle) * camera.transform.position; 
 				rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
 			}
 
 			if (Input.GetKey(keyMap.forward)) {
-				Vector3 direction = 2.0f * (player.transform.position - camera.transform.position);
-				player.transform.position = placeOnSphere(direction);
+				Vector3 normal = Vector3.Cross(Vector3.zero - player.transform.position, Vector3.zero - camera.transform.position);
+				Quaternion newRot = rotateAroundVector(normal, -Mathf.PI / 180.0f);
+				player.transform.position = newRot * player.transform.position;
+				camera.transform.position = newRot * camera.transform.position;
 
-				//camera.transform.position = minusOneDegree * camera.transform.position; 
+				rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
+			}
+
+			if (Input.GetKey(keyMap.back)) {
+				Vector3 normal = Vector3.Cross(Vector3.zero - player.transform.position, Vector3.zero - camera.transform.position);
+				Quaternion newRot = rotateAroundVector(normal, Mathf.PI / 180.0f);
+				player.transform.position = newRot * player.transform.position;
+				camera.transform.position = newRot * camera.transform.position;
+
 				rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
 			}
 
@@ -220,13 +227,6 @@ public class GameCamera : MonoBehaviour {
 
 		Debug.Log("GameCamera | getPivot | centerDistance : " + centerDistance);
 
-		/*
-		return new Vector3(
-			(point.x != 0) ? (centerDistance * distance / point.x) : 0,
-			(point.y != 0) ? (centerDistance * distance / point.y) : 0,
-			(point.z != 0) ? (centerDistance * distance / point.z) : 0
-		);
-		*/
 		return new Vector3(
 			point.x - ( (point.x != 0) ? (point.x * distance / centerDistance) : 0 ),
 			point.y - ( (point.y != 0) ? (point.y * distance / centerDistance) : 0 ),
@@ -257,9 +257,6 @@ public class GameCamera : MonoBehaviour {
 
 		if (cameraMode == CameraMode.ORBIT) {
 			rotation = Quaternion.LookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
-
-			plusOneDegree  = rotateAroundVector(player.transform.position,  cameraOrbitAngleShift);
-    		minusOneDegree = rotateAroundVector(player.transform.position, -cameraOrbitAngleShift);
 		}
 	}
 	
