@@ -22,23 +22,29 @@ public class Gun : MonoBehaviour {
 	class Bullet {
 		public float step = 1.0f;
 
+		public Vector3 start;
 		public Vector3 destination;
 		public GameObject body;
 
-		public Bullet(Vector3 start, Vector3 end, GameObject parent) {
+		private int traectoryMode = 0;
+
+		public Bullet(Vector3 start, Vector3 end, GameObject parent, int traectoryMode) {
+			this.start = start;
 			this.destination = end;
 			this.body = drawSphere(start, parent);
+
+			this.traectoryMode = traectoryMode;
 		}
 
 		public bool move() {
 			float dist = Vector3.Distance(this.body.transform.position, this.destination);
 
 			if (dist > this.step) {
-				this.body.transform.position = new Vector3(
-					this.body.transform.position.x + (this.destination.x - this.body.transform.position.x) * this.step / dist,
-					this.body.transform.position.y + (this.destination.y - this.body.transform.position.y) * this.step / dist,
-					this.body.transform.position.z + (this.destination.z - this.body.transform.position.z) * this.step / dist
-				);
+				if (traectoryMode == 0) {
+					this.body.transform.position = linearTraectory(this.body.transform.position, this.destination, dist);
+				} else {
+					this.body.transform.position = parabolicTraectory(this.body.transform.position, this.destination, dist);
+				}
 
 				return true;
 			} else {
@@ -46,6 +52,40 @@ public class Gun : MonoBehaviour {
 
 				return false;
 			}
+		}
+
+		private Vector3 linearTraectory(Vector3 bodyP, Vector3 destP, float distance) {
+			return new Vector3(
+				bodyP.x + (destP.x - bodyP.x) * this.step / distance,
+				bodyP.y + (destP.y - bodyP.y) * this.step / distance,
+				bodyP.z + (destP.z - bodyP.z) * this.step / distance
+			);
+		}
+
+		private Vector3 parabolicTraectory(Vector3 bodyP, Vector3 destP, float distance) {
+			float fullDistance = Vector3.Distance(this.start, this.destination);
+
+			Vector3 stepForvard = new Vector3(
+				bodyP.x + (destP.x - bodyP.x) * this.step / distance,
+				bodyP.y + (destP.y - bodyP.y) * this.step / distance,
+				bodyP.z + (destP.z - bodyP.z) * this.step / distance
+			);
+
+			if (distance > fullDistance / 2) {
+				return stepCloser(stepForvard, Vector3.zero, 0.1f);
+			} else {
+				return stepForvard;//stepCloser(stepForvard, Vector3.zero, -0.1f);
+			}
+		}
+
+		private Vector3 stepCloser(Vector3 start, Vector3 end, float step) {
+			float distance = Vector3.Distance(start, end);
+
+			return new Vector3(
+				start.x + (end.x - start.x) * (1 + step / distance),
+				start.y + (end.y - start.y) * (1 + step / distance),
+				start.z + (end.z - start.z) * (1 + step / distance)
+			);
 		}
 	}
 
@@ -138,7 +178,7 @@ public class Gun : MonoBehaviour {
 		return sphere;
 	}
 
-	void shoot() {
+	void shoot(int mode) {
 		bulletStore.Add(new Bullet(
 			camera.transform.position + camera.transform.up,
 			collision(
@@ -147,7 +187,8 @@ public class Gun : MonoBehaviour {
 				camera.transform.position,
 				camera.transform.position + camera.transform.forward
 			),
-			pointer
+			pointer,
+			mode
 		));
 	}
 
@@ -213,7 +254,10 @@ public class Gun : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		if (Input.GetKeyDown(KeyCode.F)) {
-			shoot();
+			shoot(0);
+		}
+		if (Input.GetKeyDown(KeyCode.G)) {
+			shoot(1);
 		}
 
 
