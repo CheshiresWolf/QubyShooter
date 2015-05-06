@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class Gun : MonoBehaviour {
 
@@ -12,18 +13,24 @@ public class Gun : MonoBehaviour {
 
 	private float radius;
 
+	private List<Bullet> bulletStore = new List<Bullet>();
+	private List<Bullet> newBulletStore;
+
+	private List<Shards> shardsStore = new List<Shards>();
+	private List<Shards> newShardsStore;
+
 	class Bullet {
 		public float step = 1.0f;
 
 		public Vector3 destination;
 		public GameObject body;
 
-		public Bullet(Vector3 start, Vector3 end) {
-			this.body = drawSphere(start);
+		public Bullet(Vector3 start, Vector3 end, GameObject parent) {
 			this.destination = end;
+			this.body = drawSphere(start, parent);
 		}
 
-		public void move() {
+		public bool move() {
 			float dist = Vector3.Distance(this.body.transform.position, this.destination);
 
 			if (dist > this.step) {
@@ -32,31 +39,116 @@ public class Gun : MonoBehaviour {
 					this.body.transform.position.y + (this.destination.y - this.body.transform.position.y) * this.step / dist,
 					this.body.transform.position.z + (this.destination.z - this.body.transform.position.z) * this.step / dist
 				);
+
+				return true;
 			} else {
-				//destroy
+				Destroy(this.body);
+
+				return false;
 			}
-		}
-
-		GameObject drawSphere(Vector3 pos) {
-			GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-			
-			sphere.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-			sphere.transform.position = pos;
-
-			return sphere;
 		}
 	}
 
+	class Shards {
+		public float step   = 0.4f;
+		public float radius = 5.0f;
+
+		public Vector3 start;
+
+		private GameObject[] pieces = new GameObject[26];//6
+
+		public Shards(Vector3 start, GameObject parent) {
+			this.start  = start;
+
+			this.pieces[0] = drawSphere(start + new Vector3( 1.0f,  0.0f,  0.0f), parent);
+			this.pieces[1] = drawSphere(start + new Vector3( 0.0f,  1.0f,  0.0f), parent);
+			this.pieces[2] = drawSphere(start + new Vector3( 0.0f,  0.0f,  1.0f), parent);
+			this.pieces[3] = drawSphere(start + new Vector3(-1.0f,  0.0f,  0.0f), parent);
+			this.pieces[4] = drawSphere(start + new Vector3( 0.0f, -1.0f,  0.0f), parent);
+			this.pieces[5] = drawSphere(start + new Vector3( 0.0f,  0.0f, -1.0f), parent);
+
+			//because i can
+
+			this.pieces[6]  = drawSphere(start + new Vector3( 1.0f,  1.0f,  0.0f), parent);
+			this.pieces[7]  = drawSphere(start + new Vector3( 0.0f,  1.0f,  1.0f), parent);
+			this.pieces[8]  = drawSphere(start + new Vector3( 1.0f,  0.0f,  1.0f), parent);
+			this.pieces[9]  = drawSphere(start + new Vector3( 1.0f,  1.0f,  1.0f), parent);
+
+			this.pieces[10] = drawSphere(start + new Vector3(-1.0f, -1.0f,  0.0f), parent);
+			this.pieces[11] = drawSphere(start + new Vector3( 0.0f, -1.0f, -1.0f), parent);
+			this.pieces[12] = drawSphere(start + new Vector3(-1.0f,  0.0f, -1.0f), parent);
+			this.pieces[13] = drawSphere(start + new Vector3(-1.0f, -1.0f, -1.0f), parent);
+
+			this.pieces[14] = drawSphere(start + new Vector3(-1.0f,  1.0f,  0.0f), parent);
+			this.pieces[15] = drawSphere(start + new Vector3( 1.0f, -1.0f,  0.0f), parent);
+			this.pieces[16] = drawSphere(start + new Vector3( 0.0f, -1.0f,  1.0f), parent);
+			this.pieces[17] = drawSphere(start + new Vector3( 0.0f,  1.0f, -1.0f), parent);
+			this.pieces[18] = drawSphere(start + new Vector3(-1.0f,  0.0f,  1.0f), parent);
+			this.pieces[19] = drawSphere(start + new Vector3( 1.0f,  0.0f, -1.0f), parent);
+
+			this.pieces[20] = drawSphere(start + new Vector3(-1.0f,  1.0f,  1.0f), parent);
+			this.pieces[21] = drawSphere(start + new Vector3( 1.0f, -1.0f,  1.0f), parent);
+			this.pieces[22] = drawSphere(start + new Vector3( 1.0f,  1.0f, -1.0f), parent);
+			this.pieces[23] = drawSphere(start + new Vector3(-1.0f, -1.0f,  1.0f), parent);
+			this.pieces[24] = drawSphere(start + new Vector3(-1.0f,  1.0f, -1.0f), parent);
+			this.pieces[25] = drawSphere(start + new Vector3( 1.0f, -1.0f, -1.0f), parent);
+
+			foreach (GameObject piece in this.pieces) {
+				setColor(piece, Color.red);
+			}
+		}
+
+		public bool move() {
+			foreach (GameObject piece in this.pieces) {
+				float dist = Vector3.Distance(start, piece.transform.position);
+
+				if (dist < this.radius) {
+					piece.transform.position = new Vector3(
+						this.start.x + (piece.transform.position.x - this.start.x) * (1 + this.step / dist),
+						this.start.y + (piece.transform.position.y - this.start.y) * (1 + this.step / dist),
+						this.start.z + (piece.transform.position.z - this.start.z) * (1 + this.step / dist)
+					);
+				} else {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		public void clean() {
+			foreach (GameObject piece in this.pieces) {
+				Destroy(piece);
+			}
+		}
+
+		void setColor(GameObject body, Color color) {
+			MeshRenderer gameObjectRenderer = body.GetComponent("MeshRenderer") as MeshRenderer;
+			gameObjectRenderer.material.color = color;
+		}
+	}
+
+	public static GameObject drawSphere(Vector3 pos, GameObject parent) {
+		GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		
+		sphere.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+		sphere.transform.position = pos;
+		sphere.transform.SetParent(parent.transform);
+
+		return sphere;
+	}
+
 	void shoot() {
-		Bullet bullet = new Bullet(
+		bulletStore.Add(new Bullet(
 			camera.transform.position + camera.transform.up,
 			collision(
 				Vector3.zero,
 				radius,
 				camera.transform.position,
 				camera.transform.position + camera.transform.forward
-			)
-		);
+			),
+			pointer
+		));
 	}
 
 	//пересечение шара и прямой
@@ -122,6 +214,34 @@ public class Gun : MonoBehaviour {
 	void Update () {
 		if (Input.GetKeyDown(KeyCode.F)) {
 			shoot();
+		}
+
+
+		if (bulletStore.Count > 0) {
+			newBulletStore = new List<Bullet>();
+			foreach (Bullet buf in bulletStore) {
+				if (buf.move()) {
+					newBulletStore.Add(buf);
+				} else {
+					shardsStore.Add(new Shards(
+						buf.destination,
+						pointer
+					));
+				}
+			}
+			bulletStore = newBulletStore;
+		}
+
+		if (shardsStore.Count > 0) {
+			newShardsStore = new List<Shards>();
+			foreach (Shards buf in shardsStore) {
+				if (buf.move()) {
+					newShardsStore.Add(buf);
+				} else {
+					buf.clean();
+				}
+			}
+			shardsStore = newShardsStore;
 		}
 	}
 }
