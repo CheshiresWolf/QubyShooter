@@ -71,8 +71,10 @@ public class Gun : MonoBehaviour {
 				bodyP.z + (destP.z - bodyP.z) * this.step / distance
 			);
 
+			Debug.Log("Gun | parabolicTraectory | distance : " + distance + "; fullDistance : " + fullDistance);
+
 			if (distance > fullDistance / 2) {
-				return stepCloser(stepForvard, Vector3.zero, 0.1f);
+				return stepCloser(Vector3.zero, stepForvard, 0.1f);
 			} else {
 				return stepForvard;//stepCloser(stepForvard, Vector3.zero, -0.1f);
 			}
@@ -82,9 +84,9 @@ public class Gun : MonoBehaviour {
 			float distance = Vector3.Distance(start, end);
 
 			return new Vector3(
-				start.x + (end.x - start.x) * (1 + step / distance),
-				start.y + (end.y - start.y) * (1 + step / distance),
-				start.z + (end.z - start.z) * (1 + step / distance)
+				start.x + (end.x * (distance - step) / distance),
+				start.y + (end.y * (distance - step) / distance),
+				start.z + (end.z * (distance - step) / distance)
 			);
 		}
 	}
