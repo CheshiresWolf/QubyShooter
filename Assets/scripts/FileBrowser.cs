@@ -131,7 +131,8 @@ public class FileBrowser : MonoBehaviour {
 		GameObject buttonText = new GameObject();
 		Text text = buttonText.AddComponent<Text>();
 		buttonText.GetComponent<RectTransform>().sizeDelta = size;
-		Font font = Resources.LoadAssetAtPath<Font>("Assets/fonts/CloisterBlack.ttf");
+		//Font font = Resources.LoadAssetAtPath<Font>("Assets/fonts/CloisterBlack.ttf");
+		Font font = Resources.Load("Assets/fonts/CloisterBlack.ttf") as Font;
 
 		text.name = "text";
 		text.font = font;
