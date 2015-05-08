@@ -5,7 +5,7 @@ public class Client : MonoBehaviour {
     const string SERVER_URL   = "127.0.0.1"; // адрес сервера
 	const int    NETWORK_PORT = 4585;        // сетевой порт
 
-	public GameObject player;
+	public  GameObject player;
     private GameObject enemy;
 
     public NetworkView rpcNet;
@@ -57,6 +57,8 @@ public class Client : MonoBehaviour {
 
 		NetworkView enemyNetwork = addNetworkComponent(enemy);
 		enemyNetwork.viewID = index;
+
+		player.GetComponent<WorldDestroyer>().players.Add(enemy);
 	}
 
 	// Use this for initialization

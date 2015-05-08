@@ -25,7 +25,7 @@ public class PositionSynchronizer : MonoBehaviour {
 	        distance = 0;
 
 	        //if (!startSynchFlag)
-	        Debug.Log("PositionSynchronizer | syncPosition : " + syncPosition);
+	        //Debug.Log("PositionSynchronizer | syncPosition : " + syncPosition);
 	        startSynchFlag = true;
 	    }
 	    if (stream.isWriting) {

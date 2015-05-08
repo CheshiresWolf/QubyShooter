@@ -6,7 +6,7 @@ public class Server : MonoBehaviour {
     const int  MAX_CONNECTIONS = 20;    // максимальное количество входящих подключений
     const bool USE_NAT         = false; // использовать NAT?
 
-    public GameObject player;
+    public  GameObject player;
     private GameObject enemy;
 
     public NetworkView rpcNet;
@@ -56,6 +56,8 @@ public class Server : MonoBehaviour {
 
 		NetworkView enemyNetwork = addNetworkComponent(enemy);
 		enemyNetwork.viewID = index;
+		
+		player.GetComponent<WorldDestroyer>().players.Add(enemy);
 	}
 
 	// Use this for initialization

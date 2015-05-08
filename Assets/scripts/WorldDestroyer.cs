@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class WorldDestroyer : MonoBehaviour {
-	public GameObject player;
+	public List<GameObject> players = new List<GameObject>();
 
 	public float destroyCoeff = 2.0f;
 	public float step = 0.01f;
@@ -91,6 +92,19 @@ public class WorldDestroyer : MonoBehaviour {
 		}
 	}
 
+	bool isInRange(TriangleAnimator animator) {
+		bool res = false;
+
+		foreach(GameObject target in players) {
+			if (Vector3.Distance(target.transform.position, animator.sPos) <= playerReactRange) {
+				res = true;
+				break;
+			}
+		}
+
+		return res;
+	}
+
 	void collapseIcosaedron() {
 
 	}
@@ -128,7 +142,7 @@ public class WorldDestroyer : MonoBehaviour {
 		}
 		if (animationMode == 2) {
 			for (int i = 0; i < animators.Length; i++) {
-				if (Vector3.Distance(player.transform.position, animators[i].sPos) <= playerReactRange) {
+				if (isInRange(animators[i])) {
 					animators[i].moveToSource();
 				} else {
 					animators[i].moveToDestination();
