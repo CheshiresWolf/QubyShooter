@@ -7,17 +7,21 @@ public class Server : MonoBehaviour {
     const bool USE_NAT         = false; // использовать NAT?
 
     public GameObject player;
-    public GameObject enemy;
+    private GameObject enemy;
 
-    public NetworkView netView;
+    public NetworkView rpcNet;
 
     void OnServerInitialized() {
     	Debug.Log("Server | initialization complete");
     }
 
-    void OnPlayerConnected(NetworkPlayer player) {
-    	Debug.Log("Server | player connected");
-        //networkView.RPC( "SpawnPlayer", player, "Player " + playerCount.ToString() ); // вызываем у игрока процедуру создания экземпляра префаба
+    void OnPlayerConnected(NetworkPlayer newPlayer) {
+    	Debug.Log("Server | player connected | rpcNet : " + rpcNet);
+
+    	NetworkView playerNetwork = addNetworkComponent(player);
+        playerNetwork.viewID = Network.AllocateViewID(); // присваиваем уникальный идентификатор в сети
+
+        rpcNet.RPC("addPlayer", newPlayer, playerNetwork.viewID);
     }
 
     void OnPlayerDisconnected(NetworkPlayer player) {
@@ -26,36 +30,38 @@ public class Server : MonoBehaviour {
         Network.DestroyPlayerObjects(player); // уничтожаем все объекты игрока
     }
 
-	void addNetworkComponent(GameObject target) {
+	NetworkView addNetworkComponent(GameObject target) {
 		NetworkView netView = target.AddComponent(typeof(NetworkView)) as NetworkView; // добавляем компонент NetworkView нашему игровому объекту
-        netView.viewID = Network.AllocateViewID(); // присваиваем уникальный идентификатор в сети
-        netView.observed = this; // указываем этот скрипт (компонент) для синхронизации
         netView.stateSynchronization = NetworkStateSynchronization.Unreliable; // нам подходит способ быстрой передачи с потерями, поскольку наше передвижение интерполируется
-	}
+        
+        netView.observed = target.AddComponent<PositionSynchronizer>(); // указываем этот скрипт (компонент) для синхронизации
 	
-	void OnSerializeNetworkView(BitStream stream, NetworkMessageInfo info) {
-		Vector3 syncPosition = Vector3.zero; // для синхронизации позиции
+        return netView;
+	}
 
-	    if (stream.isWriting) {
-	        // Sending
-	        syncPosition = player.transform.position;
-            stream.Serialize(ref syncPosition);
+	GameObject drawSphere(Vector3 pos, Color color) {
+		GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		sphere.transform.position = pos;
 
-            Debug.Log("Server | OnSerializeNetworkView | write | syncPosition : " + syncPosition);
-	    }
-	    if (stream.isReading) {
-	        // Receiving
-	        stream.Serialize(ref syncPosition);
-	        enemy.transform.position = syncPosition;
+		MeshRenderer gameObjectRenderer = sphere.GetComponent("MeshRenderer") as MeshRenderer;
+		gameObjectRenderer.material.color = color;
 
-	        Debug.Log("Server | OnSerializeNetworkView | read | syncPosition : " + syncPosition);
-	    }
-	    
+		return sphere;
+	}
+
+	[RPC]
+	void addPlayer(NetworkViewID index) {
+		Debug.Log("Server | RPC > addPlayer | index : " + index);
+		enemy = drawSphere(player.transform.position, Color.yellow);
+
+		NetworkView enemyNetwork = addNetworkComponent(enemy);
+		enemyNetwork.viewID = index;
 	}
 
 	// Use this for initialization
 	void Start () {
-        netView.observed = this;
+        //netView.observed = this;
+        //rpcNet = new NetworkView();
         
 		Network.InitializeSecurity(); // инициализируем защиту
         Network.InitializeServer(MAX_CONNECTIONS, NETWORK_PORT, USE_NAT);

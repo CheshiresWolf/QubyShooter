@@ -6,53 +6,63 @@ public class Client : MonoBehaviour {
 	const int    NETWORK_PORT = 4585;        // сетевой порт
 
 	public GameObject player;
-    public GameObject enemy;
+    private GameObject enemy;
 
-    public NetworkView netView;
+    public NetworkView rpcNet;
 
     void OnFailedToConnect(NetworkConnectionError error) {
-        Debug.Log("Failed to connect : " + error.ToString()); // при ошибке подключения к серверу выводим саму ошибку
+        Debug.Log("Client | Failed to connect : " + error.ToString()); // при ошибке подключения к серверу выводим саму ошибку
     }
 
     void OnDisconnectedFromServer(NetworkDisconnection info) {
         if (Network.isClient) {
-            Debug.Log("Disconnected from server : " + info.ToString()); // при успешном либо неуспешном отключении выводим результат
+            Debug.Log("Client | Disconnected from server : " + info.ToString()); // при успешном либо неуспешном отключении выводим результат
         } else {
-            Debug.Log("Connections closed"); // сообщение выводится при выключении сервера Network.Disconnect()
+            Debug.Log("Client | Connections closed"); // сообщение выводится при выключении сервера Network.Disconnect()
         }
     }
 
     void OnConnectedToServer() {
-        Debug.Log("Connected to server"); // сообщение выводится при успешном подключении к серверу
+        Debug.Log("Client | Connected to server | rpcNet : " + rpcNet); // сообщение выводится при успешном подключении к серверу
+
+        NetworkView playerNetwork = addNetworkComponent(player);
+        playerNetwork.viewID = Network.AllocateViewID(); // присваиваем уникальный идентификатор в сети
+
+        rpcNet.RPC("addPlayer", RPCMode.Server, playerNetwork.viewID);
     }
 
-    void addNetworkComponent(GameObject target) {
+	NetworkView addNetworkComponent(GameObject target) {
 		NetworkView netView = target.AddComponent(typeof(NetworkView)) as NetworkView; // добавляем компонент NetworkView нашему игровому объекту
-        netView.viewID = Network.AllocateViewID(); // присваиваем уникальный идентификатор в сети
-        netView.observed = this; // указываем этот скрипт (компонент) для синхронизации
         netView.stateSynchronization = NetworkStateSynchronization.Unreliable; // нам подходит способ быстрой передачи с потерями, поскольку наше передвижение интерполируется
+        
+        netView.observed = target.AddComponent<PositionSynchronizer>(); // указываем этот скрипт (компонент) для синхронизации
+	
+        return netView;
 	}
 
-	
-	void OnSerializeNetworkView(BitStream stream, NetworkMessageInfo info) {
-		
-		Vector3 syncPosition = Vector3.zero; // для синхронизации позиции
+	GameObject drawSphere(Vector3 pos, Color color) {
+		GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		sphere.transform.position = pos;
 
-	    if (stream.isWriting) {
-	        // Sending
-	        syncPosition = player.transform.position;
-            stream.Serialize(ref syncPosition);
-	    } else {
-	        // Receiving
-	        stream.Serialize(ref syncPosition);
-	        enemy.transform.position = syncPosition;
-	    }
-	    
+		MeshRenderer gameObjectRenderer = sphere.GetComponent("MeshRenderer") as MeshRenderer;
+		gameObjectRenderer.material.color = color;
+
+		return sphere;
+	}
+
+	[RPC]
+	void addPlayer(NetworkViewID index) {
+		Debug.Log("Client | RPC > addPlayer | index : " + index);
+		enemy = drawSphere(player.transform.position, Color.yellow);
+
+		NetworkView enemyNetwork = addNetworkComponent(enemy);
+		enemyNetwork.viewID = index;
 	}
 
 	// Use this for initialization
 	void Start () {
-        netView.observed = this;
+        //netView.observed = this;
+        //rpcNet = new NetworkView();
 
 		Network.Connect(SERVER_URL, NETWORK_PORT);
 		
