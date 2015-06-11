@@ -3,15 +3,68 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
 
-public class DedicatedClient : MonoBehaviour {
-    const string SERVER_URL   = "127.0.0.1"; // адрес сервера
-	const int    NETWORK_PORT = 4585;        // сетевой порт
-
-	public  GameObject player;
-	private List<GameObject> enemies = new List<GameObject>();
+public class NetworkScript : MonoBehaviour {
+	public bool mode = true; // server/client
 
     public NetworkView rpcNet;
     public Text console;
+
+    const int    NETWORK_PORT    = 4585;        // сетевой порт
+    const int    MAX_CONNECTIONS = 20;          // максимальное количество входящих подключений
+    const bool   USE_NAT         = false;       // использовать NAT?
+    const string SERVER_URL      = "127.0.0.1"; // адрес сервера
+
+    class User {
+    	public NetworkViewID id;
+    	public NetworkPlayer netPlayer;
+
+    	public User(NetworkPlayer player) {
+    		this.id = Network.AllocateViewID();
+    		this.netPlayer = player;
+    	}
+    }
+
+    private List<User> users = new List<User>();
+
+    public  GameObject player = null;
+	private List<GameObject> enemies = new List<GameObject>();
+
+    void OnServerInitialized() {
+    	consoleLog("Server | initialization complete");
+        consoleLog("Server | rpcNet.viewID : " + rpcNet.viewID);
+    }
+
+    void OnPlayerConnected(NetworkPlayer newPlayer) {
+    	consoleLog("Server | player connected | newPlayer : " + newPlayer);
+        User newUser = new User(newPlayer);
+
+        int count = users.Count;
+    	for (int i = 0; i < count; i++) {
+    		consoleLog("Server | player connected | count : " + count + "; new id : " + newUser.id + "; old id : " + users[i].id);
+    		rpcNet.RPC("addPlayer", users[i].netPlayer, newUser.id);
+    		rpcNet.RPC("addPlayer", newUser.netPlayer, users[i].id);
+    	}
+
+        users.Add(newUser);
+        consoleLog("Server | player connected | newUser.id : " + newUser.id);
+        rpcNet.RPC("setPlayer", newUser.netPlayer, newUser.id);
+    }
+
+    void OnPlayerDisconnected(NetworkPlayer player) {
+    	consoleLog("Server | player disconnected");
+
+    	List<User> otherUsers = new List<User>();
+    	for (int i = 0; i < users.Count; i++) {
+    		if (users[i].netPlayer != player) {
+    			otherUsers.Add(users[i]);
+    			rpcNet.RPC("removePlayer", users[i].netPlayer, player);
+    		}
+    	}
+    	users = otherUsers;
+
+        Network.RemoveRPCs(player); // очищаем список процедур игрока
+        Network.DestroyPlayerObjects(player); // уничтожаем все объекты игрока
+    }
 
     void OnFailedToConnect(NetworkConnectionError error) {
         consoleLog("Client | Failed to connect : " + error.ToString()); // при ошибке подключения к серверу выводим саму ошибку
@@ -27,11 +80,6 @@ public class DedicatedClient : MonoBehaviour {
 
     void OnConnectedToServer() {
         consoleLog("Client | Connected to server | rpcNet.viewID : " + rpcNet.viewID); // сообщение выводится при успешном подключении к серверу
-
-        //NetworkView playerNetwork = addNetworkComponent(player);
-        //playerNetwork.viewID = Network.AllocateViewID(); // присваиваем уникальный идентификатор в сети
-
-        //rpcNet.RPC("addPlayer", RPCMode.Server, playerNetwork.viewID);
     }
 
 	NetworkView addNetworkComponent(GameObject target) {
@@ -90,8 +138,11 @@ public class DedicatedClient : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		//enemies = new List<GameObject>();
-
-		Network.Connect(SERVER_URL, NETWORK_PORT);
+		if (mode) {
+			Network.InitializeSecurity(); // инициализируем защиту
+        	Network.InitializeServer(MAX_CONNECTIONS, NETWORK_PORT, USE_NAT);
+		} else {
+			Network.Connect(SERVER_URL, NETWORK_PORT);
+		}
 	}
 }

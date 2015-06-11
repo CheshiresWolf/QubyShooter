@@ -24,11 +24,12 @@ public class DedicatedServer : MonoBehaviour {
     private List<User> users = new List<User>();
 
     void OnServerInitialized() {
-    	console.text += "Server | initialization complete\n";
+    	consoleLog("Server | initialization complete");
+        consoleLog("Server | rpcNet.viewID : " + rpcNet.viewID);
     }
 
     void OnPlayerConnected(NetworkPlayer newPlayer) {
-    	console.text += "Server | player connected | newPlayer : " + newPlayer;
+    	consoleLog("Server | player connected | newPlayer : " + newPlayer);
         User newUser = new User(newPlayer);
 
     	for (int i = 0; i < users.Count; i++) {
@@ -36,11 +37,12 @@ public class DedicatedServer : MonoBehaviour {
     	}
 
         users.Add(newUser);
+        consoleLog("Server | player connected | newUser.id : " + newUser.id);
         rpcNet.RPC("setPlayer", newUser.netPlayer, newUser.id);
     }
 
     void OnPlayerDisconnected(NetworkPlayer player) {
-    	console.text += "Server | player disconnected\n";
+    	consoleLog("Server | player disconnected");
 
     	List<User> otherUsers = new List<User>();
     	for (int i = 0; i < users.Count; i++) {
@@ -54,6 +56,14 @@ public class DedicatedServer : MonoBehaviour {
         Network.RemoveRPCs(player); // очищаем список процедур игрока
         Network.DestroyPlayerObjects(player); // уничтожаем все объекты игрока
     }
+
+    //========<Utils>=======
+
+    void consoleLog(string text) {
+        console.text += text + "\n";
+    }
+
+    //=======</Utils>=======
 
 	// Use this for initialization
 	void Start () {

@@ -13,6 +13,7 @@ public class PositionSynchronizer : MonoBehaviour {
 	Vector3 startPos = Vector3.zero;
 
 	void OnSerializeNetworkView(BitStream stream, NetworkMessageInfo info) {
+		Debug.Log("PositionSynchronizer | OnSerializeNetworkView");
 		Vector3 syncPosition = Vector3.zero; // для синхронизации позиции
 
 	    //Debug.Log("PositionSynchronizer | read : " + stream.isReading + "; write : " + stream.isWriting);
