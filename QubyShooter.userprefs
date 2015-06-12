@@ -1,8 +1,8 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace />
-  <MonoDevelop.Ide.Workbench ActiveDocument="../ServerTest/Assets/scripts/NetworkConnector.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/scripts/AndroidCamera.cs">
     <Files>
-      <File FileName="../ServerTest/Assets/scripts/NetworkConnector.cs" Line="112" Column="57" />
+      <File FileName="Assets/scripts/AndroidCamera.cs" Line="39" Column="7" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
