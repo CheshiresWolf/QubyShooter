@@ -11,10 +11,6 @@ public class AndroidCamera : MonoBehaviour {
 
 	private float radius;
 
-	enum CameraMode { ORIGINAL, FREE, FREE_ORBIT, ORBIT };
-
-	CameraMode cameraMode = CameraMode.ORBIT;//CameraMode.FREE;
-
 	Vector3 currentRotation = new Vector3(0, 0, 0);
 	Vector3 position = Vector3.zero;
 	Quaternion rotation = Quaternion.identity;
@@ -24,12 +20,29 @@ public class AndroidCamera : MonoBehaviour {
 
     ArrowsUI moveArrows;
     ArrowsUI lookArrows;
-
-    static Text logTextField;
-    static Logger Log;
+    ArrowsUI strafeArrows;
 	
 	GameObject moveArrowsPanel;
     GameObject lookArrowsPanel;
+    GameObject strafeArrowsPanel;
+
+    static Text logTextField;
+    static Logger Log;
+
+    List<MyOwnTouch> touchList = new List<MyOwnTouch>();
+    List<MyOwnTouch> newTouchList;
+
+    Quaternion plusOneDegree, minusOneDegree;
+    float cameraOrbitAngle = Mathf.PI / 90.0f;
+
+    KeyMap keyMap;
+
+    //=======<Debug>=======
+
+    static bool DEBUG = true;
+    bool leftMouseButtonDebug = true;
+
+    //======</Debug>=======
 
     class Logger {
     	Text textField;
@@ -41,17 +54,22 @@ public class AndroidCamera : MonoBehaviour {
 
     	public Logger(Text field) {
 			this.length = 7; //because i can
+
 			this.messages = new string[this.length];
+			for (int i = 0; i < this.length; i++) {
+				this.messages[i] = "";
+			}
+
     		this.textField = field;
     	}
 
     	public void print(string message) {
 			this.index++;
 
-    		for (int i = 1; i < length; i++) {
-    			messages[i] = messages[i - 1];
+    		for (int i = this.length - 1; i > 0; i--) {
+    			this.messages[i] = this.messages[i - 1];
     		}
-    		messages[0] = message;
+    		this.messages[0] = message;
 
     		this.textField.text = formOutput();
 		}
@@ -84,7 +102,7 @@ public class AndroidCamera : MonoBehaviour {
 
 		public string moveType = "";
 
-		public MyOwnTouch(Touch touch, GameObject moveAP, GameObject moveLP) {
+		public MyOwnTouch(Touch touch, GameObject moveAP, GameObject moveLP, GameObject moveSP) {
     		this.fingerId = touch.fingerId;
 
     		this.startPos   = touch.position;
@@ -99,10 +117,14 @@ public class AndroidCamera : MonoBehaviour {
 			if (isIn(touch.position, moveLP)) {
 				this.moveType = "look";
 			}
+
+			if (isIn(touch.position, moveSP)) {
+				this.moveType = "strafe";
+			}
     	}
 
     	//only for debug
-    	public MyOwnTouch(Vector3 pos, GameObject moveAP, GameObject moveLP) {
+    	public MyOwnTouch(Vector3 pos, GameObject moveAP, GameObject moveLP, GameObject moveSP) {
 			this.fingerId = 10;
 
     		this.startPos   = pos;
@@ -118,7 +140,9 @@ public class AndroidCamera : MonoBehaviour {
 				this.moveType = "look";
 			}
 
-			Log.print("AndroidCamera | MyOwnTouch(debug) | moveType : " + this.moveType);
+			if (isIn(pos, moveSP)) {
+				this.moveType = "strafe";
+			}
     	}
 
     	public void move(Vector3 newPos) {
@@ -143,12 +167,17 @@ public class AndroidCamera : MonoBehaviour {
     		bool res = false;
 
     		Vector3 polyPos  = polygon.transform.position;
-			Rect polySize = polygon.GetComponent<RectTransform>().rect;
+			Rect    polySize = polygon.GetComponent<RectTransform>().rect;
+
+			polyPos.x += polySize.x;
+			polyPos.y += polySize.y;
 
 			if ( dot.x > polyPos.x && dot.x < (polyPos.x + polySize.width ) &&
 			     dot.y > polyPos.y && dot.y < (polyPos.y + polySize.height) ) {
 				res = true;
 			}
+
+			if (DEBUG) Log.print("AndroidCamera | MyOwnTouch | isIn | dot : " + dot + "; polygon(" + polygon.name + ") pos : " + polyPos + "; size : " + polySize + "; res : " + res);
 
     		return res;
     	}
@@ -161,9 +190,12 @@ public class AndroidCamera : MonoBehaviour {
     	public Image left  = null;
 
     	public ArrowsUI(string type) {
-    		this.up    = GameObject.Find(type + "_t_arrow").GetComponent<Image>();
+    		GameObject bufUp = GameObject.Find(type + "_t_arrow");
+    		GameObject bufBottom = GameObject.Find(type + "_b_arrow");
+
+    		this.up    = (bufUp) ? bufUp.GetComponent<Image>() : null;
     		this.right = GameObject.Find(type + "_r_arrow").GetComponent<Image>();
-    		this.down  = GameObject.Find(type + "_b_arrow").GetComponent<Image>();
+    		this.down  = (bufBottom) ? bufBottom.GetComponent<Image>() : null;
     		this.left  = GameObject.Find(type + "_l_arrow").GetComponent<Image>();
     	}
 
@@ -173,49 +205,66 @@ public class AndroidCamera : MonoBehaviour {
 			this.down.color  = down  ? Color.red : Color.black;
 			this.left.color  = left  ? Color.red : Color.black;
     	}
+
+    	public void setDirection(bool right, bool left) {
+			this.right.color = right ? Color.red : Color.black;
+			this.left.color  = left  ? Color.red : Color.black;
+    	}
     }
 
-    List<MyOwnTouch> touchList = new List<MyOwnTouch>();
-    List<MyOwnTouch> newTouchList;
+    class KeyMap {
+    	public bool moveUp, moveRight, moveDown, moveLeft;
+		public bool lookUp, lookRight, lookDown, lookLeft;
+		public bool strafeLeft, strafeRight;
 
-    Quaternion plusOneDegree, minusOneDegree;
-    float cameraOrbitAngle = Mathf.PI / 90.0f;
+		public KeyMap() {
+			this.reset();
+		}
+
+		public void reset() {
+			this.moveUp    = false;
+			this.moveRight = false;
+			this.moveDown  = false;
+			this.moveLeft  = false;
+
+			this.lookUp    = false;
+			this.lookRight = false;
+			this.lookDown  = false;
+			this.lookLeft  = false;
+
+			this.strafeLeft  = false;
+			this.strafeRight = false;
+		}
+    }
 
 	void moveCamera() {
-		bool moveUp    = false;
-		bool moveRight = false;
-		bool moveDown  = false;
-		bool moveLeft  = false;
-
-		bool lookUp    = false;
-		bool lookRight = false;
-		bool lookDown  = false;
-		bool lookLeft  = false;
-
 		foreach (MyOwnTouch ownTouch in touchList) {
 			if (ownTouch.moveType == "move") {
-				moveUp    = moveUp    || ownTouch.up;
-				moveRight = moveRight || ownTouch.right;
-				moveDown  = moveDown  || ownTouch.down;
-				moveLeft  = moveLeft  || ownTouch.left;
+				keyMap.moveUp    = keyMap.moveUp    || ownTouch.up;
+				keyMap.moveRight = keyMap.moveRight || ownTouch.right;
+				keyMap.moveDown  = keyMap.moveDown  || ownTouch.down;
+				keyMap.moveLeft  = keyMap.moveLeft  || ownTouch.left;
 			} else if (ownTouch.moveType == "look") {
-				lookUp    = lookUp    || ownTouch.up;
-				lookRight = lookRight || ownTouch.right;
-				lookDown  = lookDown  || ownTouch.down;
-				lookLeft  = lookLeft  || ownTouch.left;
+				keyMap.lookUp    = keyMap.lookUp    || ownTouch.up;
+				keyMap.lookRight = keyMap.lookRight || ownTouch.right;
+				keyMap.lookDown  = keyMap.lookDown  || ownTouch.down;
+				keyMap.lookLeft  = keyMap.lookLeft  || ownTouch.left;
+			} else if (ownTouch.moveType == "strafe") {
+				keyMap.strafeRight = keyMap.strafeRight || ownTouch.right;
+				keyMap.strafeLeft  = keyMap.strafeLeft  || ownTouch.left;
 			}
 		}
 		
-		if (moveLeft) {
+		if (keyMap.moveLeft) {
 			camera.transform.position = rotateAroundVector(player.transform.position,  cameraOrbitAngle) * camera.transform.position;
 			rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
 		}
-		if (moveRight) {
+		if (keyMap.moveRight) {
 			camera.transform.position = rotateAroundVector(player.transform.position,  -cameraOrbitAngle) * camera.transform.position; 
 			rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
 		}
 
-		if (moveUp) {
+		if (keyMap.moveUp) {
 			Vector3 normal = Vector3.Cross(Vector3.zero - player.transform.position, Vector3.zero - camera.transform.position);
 			Quaternion newRot = rotateAroundVector(normal, -Mathf.PI / 180.0f);
 			player.transform.position = newRot * player.transform.position;
@@ -224,7 +273,7 @@ public class AndroidCamera : MonoBehaviour {
 			rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
 		}
 
-		if (moveDown) {
+		if (keyMap.moveDown) {
 			Vector3 normal = Vector3.Cross(Vector3.zero - player.transform.position, Vector3.zero - camera.transform.position);
 			Quaternion newRot = rotateAroundVector(normal, Mathf.PI / 180.0f);
 			player.transform.position = newRot * player.transform.position;
@@ -236,15 +285,14 @@ public class AndroidCamera : MonoBehaviour {
 		float lookX = 0;
 		float lookY = 0;
 
-		if (lookUp)    lookY += 5.0f;
-		if (lookRight) lookX += 5.0f;
-		if (lookDown)  lookY -= 5.0f;
-		if (lookLeft)  lookX -= 5.0f;
+		if (keyMap.lookUp)    lookY -= 5.0f;
+		if (keyMap.lookRight) lookX += 5.0f;
+		if (keyMap.lookDown)  lookY += 5.0f;
+		if (keyMap.lookLeft)  lookX -= 5.0f;
 
 		rotation *= Quaternion.Euler(lookY, lookX, 0);
 
-		/*
-		if (Input.GetKey(keyMap.clockWise)) {
+		if (keyMap.strafeRight) {
 			Vector3 normal = Vector3.Cross(Vector3.zero - player.transform.position, Vector3.zero - camera.transform.position);
 			Vector3 contrNormal = Vector3.Cross(Vector3.zero - normal, Vector3.zero - player.transform.position);
 
@@ -254,7 +302,7 @@ public class AndroidCamera : MonoBehaviour {
 
 			rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
 		}
-		if (Input.GetKey(keyMap.counterClockWise)) {
+		if (keyMap.strafeLeft) {
 			Vector3 normal = Vector3.Cross(Vector3.zero - player.transform.position, Vector3.zero - camera.transform.position);
 			Vector3 contrNormal = Vector3.Cross(Vector3.zero - normal, Vector3.zero - player.transform.position);
 
@@ -264,11 +312,14 @@ public class AndroidCamera : MonoBehaviour {
 
 			rotation.SetLookRotation(player.transform.position - camera.transform.position, Vector3.zero - camera.transform.position);
 		}
-		*/
 
 		camera.transform.rotation = rotation;
-		moveArrows.setDirection(moveUp, moveRight, moveDown, moveLeft);
-		moveArrows.setDirection(lookUp, lookRight, lookDown, lookLeft);
+
+		moveArrows.setDirection(keyMap.moveUp, keyMap.moveRight, keyMap.moveDown, keyMap.moveLeft);
+		lookArrows.setDirection(keyMap.lookUp, keyMap.lookRight, keyMap.lookDown, keyMap.lookLeft);
+		strafeArrows.setDirection(keyMap.strafeRight, keyMap.strafeLeft);
+
+		keyMap.reset();
 	}
 
 	Quaternion rotateAroundVector(Vector3 vec, float angle) {
@@ -325,23 +376,27 @@ public class AndroidCamera : MonoBehaviour {
 			Vector3.zero - camera.transform.position
 		);
 
-		moveArrowsPanel = GameObject.Find("move_arrows");
-    	lookArrowsPanel = GameObject.Find("look_arrows");
+		moveArrowsPanel   = GameObject.Find("move_panel");
+    	lookArrowsPanel   = GameObject.Find("look_panel");
+    	strafeArrowsPanel = GameObject.Find("strafe_panel");
 
-		moveArrows = new ArrowsUI("move");
-		lookArrows = new ArrowsUI("look");
+		moveArrows   = new ArrowsUI("move");
+		lookArrows   = new ArrowsUI("look");
+		strafeArrows = new ArrowsUI("strafe");
 
 		logTextField = GameObject.Find("log_text").GetComponent<Text>();
 		Log = new Logger(logTextField);
+
+		keyMap = new KeyMap();
 		
-		Log.print("AndroidCamera | Start");
+		if (DEBUG) Log.print("AndroidCamera | Start");
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		foreach (Touch touch in Input.touches) {
 			if (touch.phase == TouchPhase.Began) {
-				touchList.Add(new MyOwnTouch(touch, moveArrowsPanel, lookArrowsPanel));
+				touchList.Add(new MyOwnTouch(touch, moveArrowsPanel, lookArrowsPanel, strafeArrowsPanel));
 			}
 			if (touch.phase == TouchPhase.Moved) {
 				foreach (MyOwnTouch ownTouch in touchList) {
@@ -364,10 +419,17 @@ public class AndroidCamera : MonoBehaviour {
 			}
 		}
 
-		//only for debug
-		if (Input.GetMouseButton(0)) {
-			//Log.print("AndroidCamera | Update | Touch added in : " + Input.mousePosition);
-			touchList.Add(new MyOwnTouch(Input.mousePosition, moveArrowsPanel, lookArrowsPanel));
+		if (DEBUG) {
+			//only for debug
+			if (Input.GetMouseButtonDown(0)) {
+				if (leftMouseButtonDebug) {
+					leftMouseButtonDebug = false;
+					touchList.Add(new MyOwnTouch(Input.mousePosition, moveArrowsPanel, lookArrowsPanel, strafeArrowsPanel));
+				}
+			}
+			if (Input.GetMouseButtonUp(0)) {
+				leftMouseButtonDebug = true;
+			}
 		}
 
 		moveCamera();
