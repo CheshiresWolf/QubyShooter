@@ -33,7 +33,7 @@ public class AndroidCamera : MonoBehaviour {
 
     Quaternion plusOneDegree, minusOneDegree;
     float cameraOrbitAngle = Mathf.PI / 90.0f;
-    float stepAngle = Mathf.PI / 360.0f;
+    float stepAngle = Mathf.PI / 480.0f;
 
     float cameraLookAtOffset = 1.3f;
 

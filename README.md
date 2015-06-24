@@ -9,11 +9,12 @@ GLOBAL PLANS :
     5. Multiplayer.
     6. Normal UI.
     7. Mobile optimization.
+    8. TBS elements.
+    9. Sound.
     
 IN PROGRESS :
 
-    1. Cogs texture.
-    2. Global style themes for all objects.
+    1. Cogs UV texture.
 
 FIX IT :
 
