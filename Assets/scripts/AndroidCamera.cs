@@ -11,6 +11,8 @@ public class AndroidCamera : MonoBehaviour {
 
 	private float radius;
 
+	private bool isInitAnimationFinised = false;
+
 	Vector3 currentRotation = new Vector3(0, 0, 0);
 	Vector3 position = Vector3.zero;
 	Quaternion rotation = Quaternion.identity;
@@ -41,11 +43,14 @@ public class AndroidCamera : MonoBehaviour {
     float minLookAngle = -20.0f * Mathf.PI / 90.0f;
     float maxLookAngle =  20.0f * Mathf.PI / 90.0f;
 
+    //reset Look At vertical position
+    bool resetLA = false;
+
     KeyMap keyMap;
 
     //=======<Debug>=======
 
-    static bool DEBUG = false;
+    static bool DEBUG = true;
     bool leftMouseButtonDebug = true;
 
     //======</Debug>=======
@@ -255,6 +260,16 @@ public class AndroidCamera : MonoBehaviour {
 				keyMap.lookLeft  = keyMap.lookLeft  || ownTouch.left;
 			}
 		}
+
+		if (resetLA) {
+			if (lookAngleCounter > cameraOrbitAngle) {
+				keyMap.lookDown = true;
+			} else if (lookAngleCounter < -cameraOrbitAngle) {
+				keyMap.lookUp = true;
+			} else {
+				resetLA = false;
+			}
+		}
 		
 		if (keyMap.moveUp) {
 			Vector3 normal = Vector3.Cross(Vector3.zero - player.transform.position, Vector3.zero - camera.transform.position);
@@ -390,14 +405,18 @@ public class AndroidCamera : MonoBehaviour {
 		);
 	}
 
+	public void resetLookAt() {
+		if (isInitAnimationFinised) {
+			resetLA = true;
+		}
+	}
+
 	// Use this for initialization
 	void Start () {
 		radius = icosaedron.GetComponent<Generator>().radius;
 
-		player.transform.position = new Vector3( 0,        0, radius - 0.5f    );
-		camera.transform.position = new Vector3( 0, -3.5355f, radius - 3.5355f );
-
-		lookAtPlayer();
+		player.transform.position = new Vector3( 0,        0, radius - 0.5f );
+		camera.transform.position = new Vector3( 0, -3.5355f, -3.5355f      );
 
 		moveArrowsPanel = GameObject.Find("move_panel");
     	lookArrowsPanel = GameObject.Find("look_panel");
@@ -420,50 +439,63 @@ public class AndroidCamera : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		foreach (Touch touch in Input.touches) {
-			if (touch.phase == TouchPhase.Began) {
-				touchList.Add(new MyOwnTouch(touch, moveArrowsPanel, lookArrowsPanel));
+		if (!isInitAnimationFinised) {
+			Vector3 newCameraPos = camera.transform.position;
+			newCameraPos.z += radius / 150;
+			camera.transform.position = newCameraPos;
+
+			lookAtPlayer();
+			camera.transform.rotation = rotation;
+
+			if (newCameraPos.z >= (radius - 3.5355f)) {
+				isInitAnimationFinised = true;
 			}
-			if (touch.phase == TouchPhase.Moved) {
-				foreach (MyOwnTouch ownTouch in touchList) {
-					if (ownTouch.fingerId == touch.fingerId) {
-						ownTouch.move(touch.position);
-						break;
+		} else {
+			foreach (Touch touch in Input.touches) {
+				if (touch.phase == TouchPhase.Began) {
+					touchList.Add(new MyOwnTouch(touch, moveArrowsPanel, lookArrowsPanel));
+				}
+				if (touch.phase == TouchPhase.Moved) {
+					foreach (MyOwnTouch ownTouch in touchList) {
+						if (ownTouch.fingerId == touch.fingerId) {
+							ownTouch.move(touch.position);
+							break;
+						}
 					}
 				}
-			}
-			if (touch.phase == TouchPhase.Ended) {
-				newTouchList = new List<MyOwnTouch>();
+				if (touch.phase == TouchPhase.Ended) {
+					newTouchList = new List<MyOwnTouch>();
 
-				foreach (MyOwnTouch ownTouch in touchList) {
-					if (ownTouch.fingerId != touch.fingerId) {
-						newTouchList.Add(ownTouch);
+					foreach (MyOwnTouch ownTouch in touchList) {
+						if (ownTouch.fingerId != touch.fingerId) {
+							newTouchList.Add(ownTouch);
+						}
+					}
+
+					touchList = newTouchList;
+				}
+			}
+
+			if (DEBUG) {
+				//only for debug
+				if (Input.GetMouseButtonDown(0)) {
+					if (leftMouseButtonDebug) {
+						touchList.Add(new MyOwnTouch(Input.mousePosition, moveArrowsPanel, lookArrowsPanel));
+						leftMouseButtonDebug = false;
 					}
 				}
-
-				touchList = newTouchList;
-			}
-		}
-
-		if (DEBUG) {
-			//only for debug
-			if (Input.GetMouseButtonDown(0)) {
-				if (leftMouseButtonDebug) {
-					touchList.Add(new MyOwnTouch(Input.mousePosition, moveArrowsPanel, lookArrowsPanel));
-					leftMouseButtonDebug = false;
+				if (Input.GetMouseButton(0)) {
+					if (!leftMouseButtonDebug) {
+						touchList[0].move(Input.mousePosition);
+					}
+				}
+				if (Input.GetMouseButtonUp(0)) {
+					leftMouseButtonDebug = true;
+					touchList = new List<MyOwnTouch>();
 				}
 			}
-			if (Input.GetMouseButton(0)) {
-				if (!leftMouseButtonDebug) {
-					touchList[0].move(Input.mousePosition);
-				}
-			}
-			if (Input.GetMouseButtonUp(0)) {
-				leftMouseButtonDebug = true;
-				touchList = new List<MyOwnTouch>();
-			}
-		}
 
-		moveCamera();
+			moveCamera();
+		}
 	}
 }

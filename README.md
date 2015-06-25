@@ -4,18 +4,16 @@ GLOBAL PLANS :
 
     1. Collide with obstacles.
     2. Move between layers (spheres).
-    3. Player animations.
-    4. Gestrude recongition.
-    5. Multiplayer.
-    6. Normal UI.
-    7. Mobile optimization.
-    8. TBS elements.
-    9. Sound.
+    3. Gestrude recongition.
+    4. Multiplayer.
+    5. Normal UI.
+    6. Mobile optimization.
+    7. TBS elements.
+    8. Sound.
+    9. Load level.
     
 IN PROGRESS :
 
-    1. Cogs UV texture.
+    1. Player animations.
 
 FIX IT :
-
-    1. Return to default camera position after using "Look At" panel.

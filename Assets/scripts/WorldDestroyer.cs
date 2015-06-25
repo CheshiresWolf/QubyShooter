@@ -11,13 +11,7 @@ public class WorldDestroyer : MonoBehaviour {
 
 	private TriangleAnimator[] animators;
 
-	/*
-	 * 0 - idle
-	 * 1 - move to initial position
-	 * 2 - react on user moves
-	 */
-	private int   animationMode        = 0;
-	private float initialAnimationCoef = 0;
+	private bool animationStart = false;
 
 	private class TriangleAnimator {
 		public GameObject body;
@@ -28,7 +22,7 @@ public class WorldDestroyer : MonoBehaviour {
 		public Vector3    dPos;
 		public Quaternion dRot;
 
-		float trackPos  = 1.0f;
+		float trackPos  = 0.0f;
 		float trackStep = 0.05f;
 
 		public TriangleAnimator(GameObject triangle, float range) {
@@ -38,9 +32,9 @@ public class WorldDestroyer : MonoBehaviour {
 
 			float posShift = Random.Range(1.0f, range);
 			this.dPos = new Vector3(
-				this.sPos.x * posShift,//+ (posShift * ((this.sPos.x < 0) ? -1 : 1) ),
-				this.sPos.y * posShift,//+ (posShift * ((this.sPos.y < 0) ? -1 : 1) ),
-				this.sPos.z * posShift //+ (posShift * ((this.sPos.z < 0) ? -1 : 1) )
+				this.sPos.x * posShift,
+				this.sPos.y * posShift,
+				this.sPos.z * posShift
 			);
 	    	
 	    	float rotShift = Random.Range(-1.0f, 1.0f);
@@ -50,18 +44,11 @@ public class WorldDestroyer : MonoBehaviour {
 	    		this.sRot.z,
 	    		this.sRot.w + rotShift
 	    	);
-
-			//Debug.Log("WorldDestroyer | TriangleAnimator | sPos : " + sPos + "; dPos : " + dPos);
 		}
 
 		//distanse : 0 - sPos ... 1 - dPos 
 		public void move(float distanse) {
-			//if (distanse < 0) {
-			//	distanse = 0;
-				//Debug.Log("WorldDestroyer | TriangleAnimator | move | distanse : " + distanse + "; velocity : " + velocity);
-			//}
 			float velocity = Mathf.Pow(distanse, 2.0f);
-			//Mathf.Sqrt(distanse);
 
 			this.body.transform.position = new Vector3(
 				this.sPos.x + (this.dPos.x - this.sPos.x) * velocity,
@@ -116,9 +103,7 @@ public class WorldDestroyer : MonoBehaviour {
 			animators[i] = new TriangleAnimator(triangles[i], destroyCoeff);
 		}
 
-		//new WaitForSeconds(5);
-		Debug.Log("WorldDestroyer | Update | start initial animation");
-		animationMode = 1;
+		animationStart = true;
 	}
 
 	// Use this for initialization
@@ -128,24 +113,12 @@ public class WorldDestroyer : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (animationMode == 1) {
-			if (initialAnimationCoef < 1) {
-				initialAnimationCoef += step;
-
-				for (int i = 0; i < animators.Length; i++) {
-					animators[i].move(initialAnimationCoef);
-				}
-			} else {
-				Debug.Log("WorldDestroyer | Update | initial animation complete");
-				animationMode = 2;
-			}
-		}
-		if (animationMode == 2) {
-			for (int i = 0; i < animators.Length; i++) {
-				if (isInRange(animators[i])) {
-					animators[i].moveToSource();
+		if (animationStart) {
+			foreach (TriangleAnimator animator in animators) {
+				if (isInRange(animator)) {
+					animator.moveToSource();
 				} else {
-					animators[i].moveToDestination();
+					animator.moveToDestination();
 				}
 			}
 		}
