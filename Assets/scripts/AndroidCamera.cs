@@ -416,6 +416,10 @@ public class AndroidCamera : MonoBehaviour {
 		radius = icosaedron.GetComponent<Generator>().radius;
 
 		player.transform.position = new Vector3( 0,        0, radius - 0.5f );
+		//Quaternion playerRot = player.transform.rotation;
+		//playerRot.eulerAngles = new Vector3(90, 0, 0);
+		//player.transform.rotation = playerRot;
+
 		camera.transform.position = new Vector3( 0, -3.5355f, -3.5355f      );
 
 		moveArrowsPanel = GameObject.Find("move_panel");
